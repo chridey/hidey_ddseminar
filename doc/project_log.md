@@ -12,3 +12,34 @@ Some examples of causal sentences include:
 
 The plan for the project is to learn event embeddings and predictions using a deep learning model 
 (initially with pre-trained detected events, possibly later with joint event detection and prediction).
+
+# 2016-02-04
+
+The main goals of this project are to jointly learn event embeddings and predictions of causality between events.
+Often in NLP the terms "event" and "causality" are not well-defined.  Ideally we would have full logical representations
+of events with predicates and arguments but that is not the case for this data.  However we can derive dependency parses
+with high accuracy.  I will use dependency parses because events are verb-centric and the head of a dependency parse
+is usually a verb.  Causal inference in this case is a learning problem, where we have positively labeled examples
+of sentences containing events linked by an explicit marker.
+
+I will examine recursive neural networks using dependency parses to model the compositionality of events.
+The learning framework would be as a binary classifier where the output node is the sigmoid function:
+
+$$ y = \sigma(e_1^T(t) W e_2(t) + \beta^T\phi) $$
+
+e_1 is a compositional representation of the dependencies in phrase 1, W is a classification matrix, \phi represents
+fine-grained features (traditional NLP features), and \beta is a vector of weights for those features.
+Later work will incorporate global context embeddings into the objective function
+(previous work by Hu and Walker on movie scenes indicates that the genre of a movie affects how accurate causal predictions are)
+
+The plan for this project:
+
+1. Improve and clean initial data set, create dependency parses
+2. Create a recursive neural network for predicting causality between event pairs (see Ji and Eisenstein, 2015)
+3. Incorporate global context features and additional fine-grained features
+4. Evaluate model on other data sets such as the Penn Discourse Treebank
+
+Summary of data:
+- Because the data consists of paraphrases, we have multiple representations of the same event pairs, which we can leverage during training.
+- One downside to using event pairs connected by explicit markers is that no one states obvious causal relationships.  
+- In contrast to newswire text, Wikipedia articles also have human-labeled categories, which can be treated as a vector and used to infer global context embeddings to improve causal inference (see step 3)
