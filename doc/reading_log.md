@@ -37,6 +37,7 @@ They also compare their model to skip-gram and other window-based methods and ar
 Arora et al. derive a similar word embedding model from a generative perspective.  The resulting model is similar to GloVe but was derived theoretically rather than empirically.
 
 Discussion:
+
 1) What are the advantages/disadvantages to determinining collocations this way compared to other methods like NER?
 It seems like phrases like 'Battle of Midway' are a problem for both systems.
 
