@@ -39,5 +39,6 @@ Arora et al. derive a similar word embedding model from a generative perspective
 Discussion:
 1) What are the advantages/disadvantages to determinining collocations this way compared to other methods like NER?
 It seems like phrases like 'Battle of Midway' are a problem for both systems.
+
 2) Is there a theoretical justification for using the U^(3/4) distribution that appears in the work of both Pennington and Mikolov?
 
