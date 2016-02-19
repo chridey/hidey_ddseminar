@@ -43,3 +43,14 @@ It seems like phrases like 'Battle of Midway' are a problem for both systems.
 
 2) Is there a theoretical justification for using the U^(3/4) distribution that appears in the work of both Pennington and Mikolov?
 
+#2016-02-18 Arora et al., 2016; Levy and Goldberg, 2014; Le and Mikolov, 2014
+
+Le and Mikolov describe a model for sentences and documents that builds on Mikolov's previous work in word embeddings.  The distributed memory paragraph model just adds a new vector of parameters to the k-sized context window vectors, where each paragraph is represented by its own vector.  The distributed bag of words model, alternatively, samples a window of text from the paragraph and then trains the paragraph vector to predict a word in the window, requiring only parameters for the paragraph vectors.
+
+Levy and Goldberg derive a matrix factorization algorithm from the skip gram model with negative sampling.  They show that it is equivalent to factorizing a word-context matrix where the association is measured by PMI and shifted by log k.  They describe a new metric (shifted positive PMI), where the negative entries are replaced by 0 to encourage sparseness and show improved results on some tasks using a symmetric SVD.
+
+Arora et al. show interesting results on the linearity of word embeddings.  They show that word vectors can be represented as a sparse linear combination of "sense" vectors, that indicate how that vector is used in context.  Also interesting are the results given for the atoms of discourse, which can be combined linearly to form meta-discourse vectors.
+
+Discussion:
+
+1) Why is it better in some cases (in Levy and Goldberg) to use a larger value for k?  Is this because of the importance of balancing the dataset?
