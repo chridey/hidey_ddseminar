@@ -43,3 +43,13 @@ Summary of data:
 - Because the data consists of paraphrases, we have multiple representations of the same event pairs, which we can leverage during training.
 - One downside to using event pairs connected by explicit markers is that no one states obvious causal relationships.  
 - In contrast to newswire text, Wikipedia articles also have human-labeled categories, which can be treated as a vector and used to infer global context embeddings to improve causal inference (see step 3)
+
+# 2016-02-18
+
+Much of the previous work in discourse classification includes pairs of words as features.  These pairs of words are derived from contexts (sometimes the Cartesian product from sentences in the training set or sometimes derived from a large corpus using explicit discourse connectives).  One problem with this approach is that the space of possible word pairs is very large and the space is discrete.  Continuous word representatations, however, may be able to generalize better.
+
+Iyyer et al. created a dependency recursive neural network for question answering.  The parameters of their model are a $V x d$ dimensional word embedding matrix We, an $r x d x d$ tensor Wr where r is the number of dependency relations, a $d$ long bias vector, and a $d x d$ composition matrix Wv.  The embedding for each node in the parse tree is calculated as $h_n = f(W_v^T We(x) + b + \sum_{k \in K(n)} Wr(rel(n,k))^T h_k)$ where node k is a child of node n and f is the normalized tanh function.  They use a max margin objective function where each node in the tree is similar to a correct answer vector and dissimilar from wrong answers.
+
+Yi and Eisenstein use recursive neural networks over constituent parses to predict discourse relations between sentences.  Their model uses binarized parse trees, so the model is then $h_n = f(W_v^T [h_{k1}; h_{k2}])$, where Wv is a $2d x d$ matrix, f is tanh, and k1 and k2 are the children of n.
+
+Thus far I have implemented a model using a dependency recursive neural network with softmax prediction of 3 outputs: non-causal, reason, or result using the Theano framework (see code in src).  The model uses the dependency embeddings of Iyyer but involves an additional classification matrix between two dependency embeddings.
