@@ -126,13 +126,13 @@ class DependencyRNN:
     def gradient_descent(self, new_gradients):
         self.descender.gradient_descent(*new_gradients)
 
-    #batch consists of tuples of word indices, relation indices, parent indices, and an answer index
+    #batch consists of tuples of word indices, relation indices, parent indices, and an answer index                                                                                                        
     def train(self, batch):
         total_cost_and_grad = None
 
-        #split data into batches, then into minibatches for multiprocessing
+        #split data into batches, then into minibatches for multiprocessing                                                                                                                                 
 
-        #TODO: multiprocessing
+        #TODO: multiprocessing                                                                                                                                                                              
         for datum in batch:
             cost_and_grad = self.cost_and_grad(*datum)
             if total_cost_and_grad is None:
@@ -140,9 +140,20 @@ class DependencyRNN:
             for i in range(len(cost_and_grad)):
                 total_cost_and_grad[i] += cost_and_grad[i]
 
-        #update gradients from total_cost_and_grad[1:]
+        #update gradients from total_cost_and_grad[1:]                                                                                                                                                      
         self.gradient_descent([i/len(batch) for i in total_cost_and_grad[1:]])
 
         return total_cost_and_grad[0]/len(batch)
 
+    def metrics(self, test):
+        y_true = []
+        y_pred = []
+        for i,datum in enumerate(test):                                                                                                                                                                     
+            try:
+                y_pred.append(self.classify(*datum[:-1]))                                                                                                                                                   
+            except Exception:
+                print(i)
+                continue
+            y_true.append(datum[-1])
+        return precision_recall_fscore_support(y_true, y_pred)
 
