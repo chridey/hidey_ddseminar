@@ -53,3 +53,12 @@ Iyyer et al. created a dependency recursive neural network for question answerin
 Yi and Eisenstein use recursive neural networks over constituent parses to predict discourse relations between sentences.  Their model uses binarized parse trees, so the model is then $h_n = f(W_v^T [h_{k1}; h_{k2}])$, where Wv is a $2d x d$ matrix, f is tanh, and k1 and k2 are the children of n.
 
 Thus far I have implemented a model using a dependency recursive neural network with softmax prediction of 3 outputs: non-causal, reason, or result using the Theano framework (see code in src).  The model uses the dependency embeddings of Iyyer but involves an additional classification matrix between two dependency embeddings.
+
+# 2016-02-22
+
+Curren Results:
+epoch: 14 batch: 20 cost: 0.000204721649827 time: 19.6837859154
+precision: [ 0.98676332  0.42857143  0.51333333] recall: [ 0.92414404  0.8597561   0.77      ] 
+...
+epoch: 49 batch: 40 cost: 4.4286021224e-05 time: 23.6845619678
+precision: [ 0.98675914  0.43119266  0.50326797] recall: [ 0.92384888  0.8597561   0.77      ] 
