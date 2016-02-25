@@ -56,9 +56,26 @@ Thus far I have implemented a model using a dependency recursive neural network 
 
 # 2016-02-22
 
-Curren Results:
+Current Results:
+
 epoch: 14 batch: 20 cost: 0.000204721649827 time: 19.6837859154
+
 precision: [ 0.98676332  0.42857143  0.51333333] recall: [ 0.92414404  0.8597561   0.77      ] 
+
 ...
 epoch: 49 batch: 40 cost: 4.4286021224e-05 time: 23.6845619678
-precision: [ 0.98675914  0.43119266  0.50326797] recall: [ 0.92384888  0.8597561   0.77      ] 
+
+precision: [ 0.98675914  0.43119266  0.50326797] recall: [ 0.92384888  0.8597561   0.77      ]
+
+# 2016-02-25
+
+Update: /proj/nlp crashed and CRF needs to find an outside vendor to see if they can recover the data.  The past few days I have been re-running
+some data processing and cleanup before I can try any new models.
+
+The current model performs relatively well for this task, without using any other features.  For the next step, I plan to take advantage
+of the parallel aspect of the training data (each training point is a sentence from English Wikipedia or Simple Wikipedia, but 
+
+The idea is to add a constraint to the model to maximize the similarity between pairwise embeddings ($\lambda_2 e11^Te12 + lambda_2 e21^Te22).
+
+Another possibility is to create artificial training data by swapping the clauses between parallel sentences.
+
