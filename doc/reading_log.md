@@ -45,12 +45,34 @@ It seems like phrases like 'Battle of Midway' are a problem for both systems.
 
 #2016-02-18 Arora et al., 2016; Levy and Goldberg, 2014; Le and Mikolov, 2014
 
-Le and Mikolov describe a model for sentences and documents that builds on Mikolov's previous work in word embeddings.  The distributed memory paragraph model just adds a new vector of parameters to the k-sized context window vectors, where each paragraph is represented by its own vector.  The distributed bag of words model, alternatively, samples a window of text from the paragraph and then trains the paragraph vector to predict a word in the window, requiring only parameters for the paragraph vectors.
+Le and Mikolov describe a model for sentences and documents that builds on Mikolov's previous work in word embeddings.  The distributed memory 
+paragraph model just adds a new vector of parameters to the k-sized context window vectors, where each paragraph is represented by its own vector.  
+The distributed bag of words model, alternatively, samples a window of text from the paragraph and then trains the paragraph vector to predict a word 
+in the window, requiring only parameters for the paragraph vectors.
 
-Levy and Goldberg derive a matrix factorization algorithm from the skip gram model with negative sampling.  They show that it is equivalent to factorizing a word-context matrix where the association is measured by PMI and shifted by log k.  They describe a new metric (shifted positive PMI), where the negative entries are replaced by 0 to encourage sparseness and show improved results on some tasks using a symmetric SVD.
+Levy and Goldberg derive a matrix factorization algorithm from the skip gram model with negative sampling.  They show that it is equivalent to 
+factorizing a word-context matrix where the association is measured by PMI and shifted by log k.  They describe a new metric (shifted positive PMI),
+where the negative entries are replaced by 0 to encourage sparseness and show improved results on some tasks using a symmetric SVD.
 
-Arora et al. show interesting results on the linearity of word embeddings.  They show that word vectors can be represented as a sparse linear combination of "sense" vectors, that indicate how that vector is used in context.  Also interesting are the results given for the atoms of discourse, which can be combined linearly to form meta-discourse vectors.
+Arora et al. show interesting results on the linearity of word embeddings.  They show that word vectors can be represented as a sparse linear
+combination of "sense" vectors, that indicate how that vector is used in context.  Also interesting are the results given for the atoms of discourse, 
+which can be combined linearly to form meta-discourse vectors.
 
 Discussion:
 
 1) Why is it better in some cases (in Levy and Goldberg) to use a larger value for k?  Is this because of the importance of balancing the dataset?
+
+# 2016-02-25 Bhattacharya and Dunson, 2012; Zhou et al., 2014
+
+Bhattacharya and Dunson describe a new model for modeling high-dimensional categorical data with dependencies between variables.  
+They create a simplex factor model with Dirichlet priors and derive an MCMC algorithm for inference.
+They describe applications for DNA sequencing and show improvements over a random forest baseline.
+Zhou et al describe improvements for sparse tensor factorization using a hierarchical model.  
+They derive a Gibbs sampling algorithm for inference.
+They show improvements over standard PARAFAC factorization for a gene sequencing dataset and a sociology dataset.
+
+Discussion:
+
+1) What are some examples of tensor representations for natural language data?  Interaction between events seems like it would be a good model for
+tensor factorization (for example the GDELT data with two actors, actions, and time) 
+
