@@ -73,7 +73,8 @@ Update: /proj/nlp crashed and CRF needs to find an outside vendor to see if they
 some data processing and cleanup before I can try any new models.
 
 The current model performs relatively well for this task, without using any other features.  For the next step, I plan to take advantage
-of the parallel aspect of the training data (each training point is a sentence from English Wikipedia or Simple Wikipedia, but 
+of the parallel aspect of the training data (each training point is a sentence from English Wikipedia or Simple Wikipedia, but every sentence is also
+part of a paraphrase pair between a sentence from English Wikipedia and one from Simple Wikipedia).
 
 The idea is to add a constraint to the model to maximize the similarity between pairwise embeddings ($\lambda_2 e11^Te12 + lambda_2 e21^Te22).
 
