@@ -80,3 +80,21 @@ The idea is to add a constraint to the model to maximize the similarity between 
 
 Another possibility is to create artificial training data by swapping the clauses between parallel sentences.
 
+# 2016-03-04 Hoffman et al., 2013, Ranganath et al., 2014
+
+I found the paper by Hoffman et al to be well-written (maybe because it contains a full review of variational 
+inference and seems to be written for non-statisticians).  I thought it was interesting how stochastic optimization
+was motivated, in part by the fact that updating the global parameters is very inefficient under
+traditional variational inference, where the entire data set needs to be observed before one update to the
+global parameters.  Furthermore, the explanation for using the natural gradient makes sense.
+In a machine learning context, for gradient descent the data are
+either scaled to unit length or to have mean 0 and unit variance, depending on the application, but as far as I
+understand it doesn't make sense to do this with probability distributions.
+
+The second paper was a more difficult read for me, as it assumed some background knowledge, particularly for
+Rao-Blackwellization.  I found the application very interesting, as it could apply to the model I am interested
+in working with, which is not conditionally conjugate so would require a variational inference approach.
+
+Discussion:
+1) The second article mentions that using stochastic optimization to optimize the ELBO may have gradients with
+variance too large to be useful, which I didn't follow.  Why is the reduction in variance needed?
