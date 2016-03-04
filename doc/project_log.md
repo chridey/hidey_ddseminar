@@ -80,21 +80,27 @@ The idea is to add a constraint to the model to maximize the similarity between 
 
 Another possibility is to create artificial training data by swapping the clauses between parallel sentences.
 
-# 2016-03-04 Hoffman et al., 2013, Ranganath et al., 2014
+# 2016-03-03
 
-I found the paper by Hoffman et al to be well-written (maybe because it contains a full review of variational 
-inference and seems to be written for non-statisticians).  I thought it was interesting how stochastic optimization
-was motivated, in part by the fact that updating the global parameters is very inefficient under
-traditional variational inference, where the entire data set needs to be observed before one update to the
-global parameters.  Furthermore, the explanation for using the natural gradient makes sense.
-In a machine learning context, for gradient descent the data are
-either scaled to unit length or to have mean 0 and unit variance, depending on the application, but as far as I
-understand it doesn't make sense to do this with probability distributions.
+This week I finished implementing updates to the model (adding the pairwise similarity constraint and the manually derived features).
+I am still waiting on data recovery to test out improvements.
 
-The second paper was a more difficult read for me, as it assumed some background knowledge, particularly for
-Rao-Blackwellization.  I found the application very interesting, as it could apply to the model I am interested
-in working with, which is not conditionally conjugate so would require a variational inference approach.
+The downside of this model is that it is limited to labeled training data and observed structure (not causal or causal with direction)
+so I spent some time researching and developing a generative model for the next step in the project.
 
-Discussion:
-1) The second article mentions that using stochastic optimization to optimize the ELBO may have gradients with
-variance too large to be useful, which I didn't follow.  Why is the reduction in variance needed?
+I spent time reading over relevant research on causality detection.  There's an interesting paper in the psychology literature
+about how humans learn a theory of causality (Goodman et al, 2010).  They create a hierarchical Bayesian model,
+where they represent logical dependencies as Bayesian network structures based on Judea Pearl's theory of causation (representing
+dependence, independence, intervention).  The generative story is then:
+1) for every system s in S
+		generate predicate A_s, relation R_s (directed connection between node)  uniformly from theory T
+		for every trial t in T_s
+			generate d_t from the conditional probability table R_theta with prior alpha on theta
+However, they represent these events as discrete binary events and are able to use a beta-binomial model.
+There are also a limited number of causal structures (543).
+Any model with text would not be conditionally conjugate.  The next step is to research whether dynamic topic models might apply here.  
+
+I also read over some of the theory by Judea Pearl theory on causality.
+Here are some relevant blog posts:
+http://www.michaelnielsen.org/ddi/if-correlation-doesnt-imply-causation-then-what-does/
+http://www.michaelnielsen.org/ddi/guest-post-judea-pearl-on-correlation-causation-and-the-psychology-of-simpsons-paradox/
