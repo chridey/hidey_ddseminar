@@ -104,3 +104,11 @@ I also read over some of the theory by Judea Pearl theory on causality.
 Here are some relevant blog posts:
 http://www.michaelnielsen.org/ddi/if-correlation-doesnt-imply-causation-then-what-does/
 http://www.michaelnielsen.org/ddi/guest-post-judea-pearl-on-correlation-causation-and-the-psychology-of-simpsons-paradox/
+
+# 2016-03-05
+
+Krishman and Eisenstein (2015) use social networks to predict terms of address formality.  The latent variables are 
+hidden social network structure and the observed variables are interactions.  The latent network structure is parameterized with
+a log-linear model and the output labels are multinomials conditioned on the hidden structure.
+They apply mean field inference to determine the parameters.  This might work for causality detection, where the hidden structure is
+a network between 3 or more variables and the outputs are the connectives between events.
