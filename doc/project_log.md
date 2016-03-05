@@ -80,3 +80,27 @@ The idea is to add a constraint to the model to maximize the similarity between 
 
 Another possibility is to create artificial training data by swapping the clauses between parallel sentences.
 
+# 2016-03-03
+
+This week I finished implementing updates to the model (adding the pairwise similarity constraint and the manually derived features).
+I am still waiting on data recovery to test out improvements.
+
+The downside of this model is that it is limited to labeled training data and observed structure (not causal or causal with direction)
+so I spent some time researching and developing a generative model for the next step in the project.
+
+I spent time reading over relevant research on causality detection.  There's an interesting paper in the psychology literature
+about how humans learn a theory of causality (Goodman et al, 2010).  They create a hierarchical Bayesian model,
+where they represent logical dependencies as Bayesian network structures based on Judea Pearl's theory of causation (representing
+dependence, independence, intervention).  The generative story is then:
+1) for every system s in S
+		generate predicate A_s, relation R_s (directed connection between node)  uniformly from theory T
+		for every trial t in T_s
+			generate d_t from the conditional probability table R_theta with prior alpha on theta
+However, they represent these events as discrete binary events and are able to use a beta-binomial model.
+There are also a limited number of causal structures (543).
+Any model with text would not be conditionally conjugate.  The next step is to research whether dynamic topic models might apply here.  
+
+I also read over some of the theory by Judea Pearl theory on causality.
+Here are some relevant blog posts:
+http://www.michaelnielsen.org/ddi/if-correlation-doesnt-imply-causation-then-what-does/
+http://www.michaelnielsen.org/ddi/guest-post-judea-pearl-on-correlation-causation-and-the-psychology-of-simpsons-paradox/
