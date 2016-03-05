@@ -7,7 +7,7 @@ from util.adagrad import Adagrad
 from util.activation import normalized_tanh
 
 class DependencyRNN:
-    def __init__(self, d, V, r, nc, embeddings=None):
+    def __init__(self, d, V, r, nc, nf, pairwise_constraint=False, embeddings=None):
         #d = dimensionality of embeddings
         #V = size of vocabulary
         #r = number of dependency relations
@@ -37,6 +37,11 @@ class DependencyRNN:
         self.b = theano.shared(name='b',
                                value=np.zeros(d, dtype=theano.config.floatX))
 
+        #weights for fine grained features plus bias
+        self.beta = theano.shared(name='beta', 
+                                  value=0.2 * np.random.uniform(-1.0, 1.0, (nc, nf))
+                                  ).astype(theano.config.floatX)
+                                  
         #low dimension approximation to classification parameters
         self.a = []
         for i in range(nc):
@@ -48,7 +53,7 @@ class DependencyRNN:
                                        #value=np.zeros(d, dtype=theano.config.floatX)))
             self.a.append(a)
             
-        self.params = [self.We, self.Wr, self.Wv, self.b] + [j for i in self.a for j in i]
+        self.params = [self.We, self.Wr, self.Wv, self.b] + [j for i in self.a for j in i] + [self.beta]
 
         self.descender = Adagrad(self.params)
 
@@ -71,7 +76,12 @@ class DependencyRNN:
         hidden_states = []
         h = []
         s = []
-        for i in range(2):
+        if pairwise_constraint:
+            num_events = 4
+        else:
+            num_events = 2
+
+        for i in range(num_events):
             idxs.append(T.ivector('idxs'))
             x.append(self.We[idxs[i]])
 
@@ -106,51 +116,86 @@ class DependencyRNN:
         self.states = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1]],
                                       outputs=[h[0], h[1]])
         
-        #A = theano.shared(name='A',
-        #                  value=np.zeros((d, d, nc), dtype=theano.config.floatX))
-        p_y_given_x = T.nnet.softmax(T.dot(h[0][-1, -1], A).T.dot(h[1][-1, -1]))
+        #add fine-grained features
+        phi = T.vector('phi')
 
+        p_y_given_x = T.nnet.softmax(T.dot(h[0][-1, -1], A).T.dot(h[1][-1, -1]) + T.dot(self.beta, phi))
         y_pred = T.argmax(p_y_given_x, axis=1)
-        y = T.iscalar('y')
-        sentence_nll = -(T.log(p_y_given_x)[0,y])
-
-        #grad = T.grad(sentence_nll, self.params[:4] + [A])
-        grad = T.grad(sentence_nll, self.params)
-
-        self.classify = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1]],
+        
+        self.classify = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], phi],
                                         outputs=y_pred)
 
-        self.cost_and_grad = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], y],
-                                             outputs=[sentence_nll] + grad)
+        y = T.iscalar('y')
+
+        if not pairwise_constraint:        
+            sentence_nll = -(T.log(p_y_given_x)[0,y])
+
+            grad = T.grad(sentence_nll, self.params)
+
+        
+            self.cost_and_grad = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], phi, y],
+                                                 outputs=[sentence_nll] + grad)
+        else:
+            lambda_e = T.scalar('lambda_e')
+
+            phi2 = T.matrix('phi2')
+            p_y_given_x1 = T.nnet.softmax(T.dot(h[0][-1, -1], A).T.dot(h[1][-1, -1]) + T.dot(self.beta, phi))
+            p_y_given_x2 = T.nnet.softmax(T.dot(h[2][-1, -1], A).T.dot(h[3][-1, -1]) + T.dot(self.beta, phi2))
+
+            sentence_nll = -(T.log(p_y_given_x1)[0,y]) - (T.log(p_y_given_x2)[0,y])
+
+            #add constraint that events should be maximally similar
+            cost = sentence_nll - lambda_e*T.dot(h[0][-1, -1], h[2][-1, -1]) - lambda_e*T.dot(h[1][-1, -1], h[3][-1, -1])
+
+            #grad = T.grad(sentence_nll, self.params[:4] + [A])
+            grad = T.grad(cost, self.params)
+
+            self.cost_and_grad = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], phi, 
+                                                         idxs[2], rel_idxs[2], p[2], idxs[3], rel_idxs[3], p[3], phi2,
+                                                         y, theano.function.In(lambda_e, value=1)],
+                                                 outputs=[cost] + grad)
 
     def gradient_descent(self, new_gradients):
         self.descender.gradient_descent(*new_gradients)
 
-    #batch consists of tuples of word indices, relation indices, parent indices, and an answer index                                                                                                        
-    def train(self, batch):
+    #batch consists of tuples of word indices, relation indices, parent indices, and an answer index                                                                                                      
+    def train(self, batch, lambda_w=1, lambda_a=1, lambda_beta=1, lambda_e=1):
         total_cost_and_grad = None
 
-        #split data into batches, then into minibatches for multiprocessing                                                                                                                                 
+        #split data into batches, then into minibatches for multiprocessing                                                                                                                               
+        #TODO: multiprocessing                                                                                                                                                                             
+        regularization = np.zeros(len(self.params))
+        for i,j in enumerate(self.params):
+            if i < 4:
+                lamda = lambda_w
+            elif i == len(self.params)-1:
+                lamda = lambda_beta
+            else:
+                lamda = lambda_a
 
-        #TODO: multiprocessing                                                                                                                                                                              
+            regularization[i] = j.get_value()*lamda
+
         for datum in batch:
-            cost_and_grad = self.cost_and_grad(*datum)
+            cost_and_grad = self.cost_and_grad(*datum, lambda_e=lambda_e)
             if total_cost_and_grad is None:
                 total_cost_and_grad = [0.] + [np.zeros(i.shape) for i in cost_and_grad[1:]]
             for i in range(len(cost_and_grad)):
                 total_cost_and_grad[i] += cost_and_grad[i]
 
-        #update gradients from total_cost_and_grad[1:]                                                                                                                                                      
-        self.gradient_descent([i/len(batch) for i in total_cost_and_grad[1:]])
+        #update gradients from total_cost_and_grad[1:]                                                                                                                                                    
+        #add L2 regularization
+        #lambda_W, lambda_A, lambda_beta
+
+        self.gradient_descent([j/len(batch) + regularization[i] for i,j in enumerate(total_cost_and_grad[1:])])
 
         return total_cost_and_grad[0]/len(batch)
 
     def metrics(self, test):
         y_true = []
         y_pred = []
-        for i,datum in enumerate(test):                                                                                                                                                                     
+        for i,datum in enumerate(test):                                                                                                                                                                    
             try:
-                y_pred.append(self.classify(*datum[:-1]))                                                                                                                                                   
+                y_pred.append(self.classify(*datum[:-1]))                                                                                                                                                  
             except Exception:
                 print(i)
                 continue
