@@ -94,3 +94,17 @@ in working with, which is not conditionally conjugate so would require a variati
 Discussion:
 1) The second article mentions that using stochastic optimization to optimize the ELBO may have gradients with
 variance too large to be useful, which I didn't follow.  Why is the reduction in variance needed?
+
+# 2016-03-11 Taddy 2013; Taddy 2015
+
+Taddy describes methods for multinomial inverse regression.  The general problem in inverse regression is to
+determine the probability p(x|y) instead of p(y|x), and many dimensionality reduction methods are formulated
+in this way.  In the 2013 paper, each element is drawn from a multinomial distribution where the parameters
+are a linear combination of parameters.  These parameters are learned as part of the modeling resulting in 
+dimensionality reduction.  On each coefficient he used a Laplace prior to enforce sparsity, which is not surprising.
+However, the major difference in this model is learning the lambda parameters individually, which prevents
+overpenalization.
+
+The second paper describes a distributed method for multinomial inverse regression.  The improvement over the
+previous work is to estimate the normalizer, which is usually costly, and where the counts for 
+the multinomial distribution are estimated by factorizing into Poisson distributions.
