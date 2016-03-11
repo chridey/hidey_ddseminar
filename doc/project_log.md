@@ -112,3 +112,13 @@ hidden social network structure and the observed variables are interactions.  Th
 a log-linear model and the output labels are multinomials conditioned on the hidden structure.
 They apply mean field inference to determine the parameters.  This might work for causality detection, where the hidden structure is
 a network between 3 or more variables and the outputs are the connectives between events.
+
+# 2016-03-11
+
+For the next stage I plan to implement a model to maximize PMI directly in order to learn event embeddings.  The current model requires 
+a classification matrix in the final stage in order to determine the relationship between events.  Since we are trying to predict
+causality, one possibility is to maximize the PMI between two events directly, similar to factorization of a PMI matrix for word embeddings.
+Rather than maximizing $e_1(t)^T A e_t(2)$, the goal is to factorize $e_1(t)^T e_t(2)$ to minimize the difference between that dot product
+and the PMI of discrete events.  For this, I need to assume that the probability of an event factorizes into the probability of a predicate
+and its arguments, where $p(e) = p(p) \pi_{a_i \in a_p} p(a_i | p) $ where the arguments are all independent of one another.
+
