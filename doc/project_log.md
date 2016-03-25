@@ -127,13 +127,13 @@ and its arguments, where $p(e) = p(p) \pi_{a_i \in a_p} p(a_i | p) $ where the a
 The past 2 weeks have been spent
 implementing the unsupervised algorithm described in the previous note.  
 There were several steps involved in this process:
-1) creating dependency parses of all of English Wikipedia (~4,900,000 articles)
-2) calculating discrete probabilities for the formula in the previous note
-	Assuming PMI(e_1, e_2) = p(e_1, e_2)/(p(e_1)*p(e_2))
-	where p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)
-	and p(e_1, e_2) = p(p_1, p_2) p(s_1 | p_1, p_2) p(s_2 | p_1, p_2) \pi_{a_i \in a_{p_1} \cup a_{p_2}} p(a_i | p_1, p_2)
-	where p is a predicate, s is the subject of the predicate, and a_i is an argument of the predicate
-3) modifying the dependency RNN to handle dot product of event embeddings without the classification matrix
+1. creating dependency parses of all of English Wikipedia (~4,900,000 articles)
+2. calculating discrete probabilities for the formula in the previous note
+	a. Assuming PMI(e_1, e_2) = p(e_1, e_2)/(p(e_1)*p(e_2))
+	b. where p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)
+	c. and p(e_1, e_2) = p(p_1, p_2) p(s_1 | p_1, p_2) p(s_2 | p_1, p_2) \pi_{a_i \in a_{p_1} \cup a_{p_2}} p(a_i | p_1, p_2)
+	d. where p is a predicate, s is the subject of the predicate, and a_i is an argument of the predicate
+3. modifying the dependency RNN to handle dot product of event embeddings without the classification matrix
 
 Previous work identified the predicate and arguments from the dependency parse (Do et al, 2011; Guritkevich, 2008) 
 where they determined predicates to be verbs or deverbal nouns.  These probabilities are calculated for all
