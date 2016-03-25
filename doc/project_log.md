@@ -122,3 +122,9 @@ Rather than maximizing $e_1(t)^T A e_t(2)$, the goal is to factorize $e_1(t)^T e
 and the PMI of discrete events.  For this, it is easier assume that the probability of an event factorizes into the probability of a predicate
 and its arguments, where $p(e) = p(p) \pi_{a_i \in a_p} p(a_i | p) $ where the arguments are all independent of one another.
 
+# 2016-03-25
+
+created dependency parses of all of English Wikipedia (~4,900,000 articles)
+calculated discrete probabilities
+modified dependency RNN to handle dot product of event embeddings
+previous work determined predicates to be verbs or deverbal nouns
