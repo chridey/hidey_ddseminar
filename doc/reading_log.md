@@ -108,3 +108,19 @@ overpenalization.
 The second paper describes a distributed method for multinomial inverse regression.  The improvement over the
 previous work is to estimate the normalizer, which is usually costly, and where the counts for 
 the multinomial distribution are estimated by factorizing into Poisson distributions.
+
+# 2016-03-25 Gershman and Blei 2013; Neal, 2000 
+
+Gershman and Blei introduce Bayesian nonparametric models by motivating the model selection problem, i.e. how many clusters or factors to use
+(which I thought was a good start to the paper).  They then distinguish between a finite mixture model and a CRP mixture model.  
+The next section describes latent factor models with motivation from a Bayesian perspective, in comparison to the common ML or MAP estimation methods.  
+With Bayesian nonparametrics, the corresponding model is the Indian buffet process.
+(I would have preferred more detail in this section with an example).
+
+Neal begins by introducing DP mixture models.
+I like that this paper describes a dirichlet process mixture model as equivalent to a finite mixture model with K approaching infinity.
+The paper then describes Gibbs sampling for conditionally conjugate models and derives the conditional distributions
+where the assumption of exchangeability makes the conditional distribution easier to calculate.  However, this leads to slow 
+convergence, as the thetas can only change for one observation at a time.  Instead, they derive a collapsed Gibbs sampling
+algorithm with the mixing proportions integrated out.
+
