@@ -140,3 +140,10 @@ Previous work identified the predicate and arguments from the dependency parse (
 where they determined predicates to be verbs or deverbal nouns.  These probabilities are calculated for all
 pairs of events in an article (however, we use a 3 sentence window).
 The deverbal nouns are determined heuristically.
+
+# 2016-03-30
+
+Currently working on implementing skip-gram with negative sampling for events.  Rather than sampling from a joint distribution
+over events, I am assuming the event distribution factorizes as $p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)$, since
+many events only occur once.
+The events themselves are represented as $e = f(W_{subj} \dot x_{subj} + W_{pred} \dot x_{pred} + \sum_a W_a \dot x_a)$.
