@@ -153,6 +153,8 @@ The events themselves are represented as $e = f(W_{subj} \dot x_{subj} + W_{pred
 Using the Wikipedia articles from September, 2015, there are X total events and Y unique events.
 There are Z total words and A unique words, where a "word" is a word or multi-word phrase combined
 using the relations "compound", "name", and "mwe" from the dependency parse.
+Using the compounded Wikipedia corpus, I trained a word2vec model with a minimum count of 1 to initialize the
+word embeddings for use in the event model.
 
 Overall, the event similarity is more difficult than for word2vec as there are
 fewer total events than words and more unique events than words.
