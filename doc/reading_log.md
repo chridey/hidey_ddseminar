@@ -126,4 +126,8 @@ algorithm with the mixing proportions integrated out.
 
 # 2016-04-01 Zhou and Carin 2013
 
-
+Zhou and Carin describe a connection between count modeling and mixture modeling using the Poisson process.  For a disjoint subset $A$ of \Omega, a draw from a 
+Poisson process is a way to provide counts for elements in grouped data.  They also place a Gamma prior on the base measure $G$ which gives a gamma-poisson
+process and then marginalize out $G$, leading to a negative binomial process.  As this prior is conjugate the posterior is conditionally conjugate.
+One downside to the gamma-Poisson process is that although it can be equivalently expressed as a Dirichlet process, it leads to the same mixture proportions across
+groups in mixture modeling.  Thus they introduce the gamma-NB process, where the parameters are group dependent.
