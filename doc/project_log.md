@@ -147,3 +147,16 @@ Currently working on implementing skip-gram with negative sampling for events.  
 over events, I am assuming the event distribution factorizes as $p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)$, since
 many events only occur once.
 The events themselves are represented as $e = f(W_{subj} \dot x_{subj} + W_{pred} \dot x_{pred} + \sum_a W_a \dot x_a)$.
+
+# 2016-03-31
+
+Using the Wikipedia articles from September, 2015, there are X total events and Y unique events.
+There are Z total words and A unique words, where a "word" is a word or multi-word phrase combined
+using the relations "compound", "name", and "mwe" from the dependency parse.
+
+Overall, the event similarity is more difficult than for word2vec as there are
+fewer total events than words and more unique events than words.
+
+Determining the correct window size will require some tuning.
+For words, a 10 word window (5 in either direction) is enough to capture semantic and syntactic dependencies.
+For events, a smaller window might be better.  Would we expect an event at the beginning of an article to directly affect an event much later on?
