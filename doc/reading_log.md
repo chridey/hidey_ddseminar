@@ -124,3 +124,6 @@ where the assumption of exchangeability makes the conditional distribution easie
 convergence, as the thetas can only change for one observation at a time.  Instead, they derive a collapsed Gibbs sampling
 algorithm with the mixing proportions integrated out.
 
+# 2016-04-01 Zhou and Carin 2013
+
+
