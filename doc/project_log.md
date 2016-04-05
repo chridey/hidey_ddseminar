@@ -162,3 +162,12 @@ fewer total events than words and more unique events than words.
 Determining the correct window size will require some tuning.
 For words, a 10 word window (5 in either direction) is enough to capture semantic and syntactic dependencies.
 For events, a smaller window might be better.  Would we expect an event at the beginning of an article to directly affect an event much later on?
+
+# 2016-04-04
+
+(For related work)
+Levy and Goldberg (2014) used dependency-based word embeddings where the context of a word is a relation/word pair for all of its children in a dependency parse.
+They showed that using dependency contexts rather than bag of word contexts resulted in different measures of similarity.  For example, the most similar
+vectors to 'florida' using BoW were 'jacksonville', 'tampa', 'fla', whereas using dependencies resulted in 'carolina' and 'california', for example.
+They describe this as a difference between domain similarity and functional similarity.
+For causality, we would expect functional similarity to be more useful as there is some sense of exchangeability in this context.
