@@ -112,3 +112,62 @@ hidden social network structure and the observed variables are interactions.  Th
 a log-linear model and the output labels are multinomials conditioned on the hidden structure.
 They apply mean field inference to determine the parameters.  This might work for causality detection, where the hidden structure is
 a network between 3 or more variables and the outputs are the connectives between events.
+
+# 2016-03-11
+
+For the next stage I plan to implement a model to maximize PMI directly in order to learn event embeddings.  The current model requires 
+a classification matrix in the final stage in order to determine the relationship between events.  Since we are trying to predict
+causality, one possibility is to maximize the PMI between two events directly, similar to factorization of a PMI matrix for word embeddings.
+Rather than maximizing $e_1(t)^T A e_t(2)$, the goal is to factorize $e_1(t)^T e_t(2)$ to minimize the difference between that dot product
+and the PMI of discrete events.  For this, it is easier assume that the probability of an event factorizes into the probability of a predicate
+and its arguments, where $p(e) = p(p) \pi_{a_i \in a_p} p(a_i | p) $ where the arguments are all independent of one another.
+
+# 2016-03-25
+
+The past 2 weeks have been spent
+implementing the unsupervised algorithm described in the previous note.  
+There were several steps involved in this process:
+
+1. creating dependency parses of all of English Wikipedia (~4,900,000 articles)
+2. calculating discrete probabilities for the formula in the previous note
+	- Assuming PMI(e_1, e_2) = p(e_1, e_2)/(p(e_1)*p(e_2))
+	- where p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)
+	- and p(e_1, e_2) = p(p_1, p_2) p(s_1 | p_1, p_2) p(s_2 | p_1, p_2) \pi_{a_i \in a_{p_1} \cup a_{p_2}} p(a_i | p_1, p_2)
+	- where p is a predicate, s is the subject of the predicate, and a_i is an argument of the predicate
+3. modifying the dependency RNN to handle dot product of event embeddings without the classification matrix
+
+Previous work identified the predicate and arguments from the dependency parse (Do et al, 2011; Guritkevich, 2008) 
+where they determined predicates to be verbs or deverbal nouns.  These probabilities are calculated for all
+pairs of events in an article (however, we use a 3 sentence window).
+The deverbal nouns are determined heuristically.
+
+# 2016-03-30
+
+Currently working on implementing skip-gram with negative sampling for events.  Rather than sampling from a joint distribution
+over events, I am assuming the event distribution factorizes as $p(e) = p(p) p(s | p) \pi_{a_i \in a_p} p(a_i | p)$, since
+many events only occur once.
+The events themselves are represented as $e = f(W_{subj} \dot x_{subj} + W_{pred} \dot x_{pred} + \sum_a W_a \dot x_a)$.
+
+# 2016-03-31
+
+Using the Wikipedia articles from September, 2015, there are X total events and Y unique events.
+There are Z total words and A unique words, where a "word" is a word or multi-word phrase combined
+using the relations "compound", "name", and "mwe" from the dependency parse.
+Using the compounded Wikipedia corpus, I trained a word2vec model with a minimum count of 1 to initialize the
+word embeddings for use in the event model.
+
+Overall, the event similarity is more difficult than for word2vec as there are
+fewer total events than words and more unique events than words.
+
+Determining the correct window size will require some tuning.
+For words, a 10 word window (5 in either direction) is enough to capture semantic and syntactic dependencies.
+For events, a smaller window might be better.  Would we expect an event at the beginning of an article to directly affect an event much later on?
+
+# 2016-04-04
+
+(For related work)
+Levy and Goldberg (2014) used dependency-based word embeddings where the context of a word is a relation/word pair for all of its children in a dependency parse.
+They showed that using dependency contexts rather than bag of word contexts resulted in different measures of similarity.  For example, the most similar
+vectors to 'florida' using BoW were 'jacksonville', 'tampa', 'fla', whereas using dependencies resulted in 'carolina' and 'california', for example.
+They describe this as a difference between domain similarity and functional similarity.
+For causality, we would expect functional similarity to be more useful as there is some sense of exchangeability in this context.
