@@ -44,9 +44,9 @@ class EventPairRNN:
                                value=np.zeros(d, dtype=theano.config.floatX))
 
         #weights for fine grained features plus bias
-        self.beta = theano.shared(name='beta', 
-                                  value=0.2 * np.random.uniform(-1.0, 1.0, (nc, nf))
-                                  ).astype(theano.config.floatX)
+        #self.beta = theano.shared(name='beta', 
+        #                          value=0.2 * np.random.uniform(-1.0, 1.0, (nc, nf))
+        #                          ).astype(theano.config.floatX)
                                   
         #low dimension approximation to classification parameters
         self.a = []
@@ -62,9 +62,9 @@ class EventPairRNN:
         self.pairwise_constraint = pairwise_constraint
 
         if fix_embeddings:
-            self.params = [self.Wr, self.Wv, self.b] + [j for i in self.a for j in i] + [self.beta]
+            self.params = [self.Wr, self.Wv, self.b] + [j for i in self.a for j in i]# + [self.beta]
         else:
-            self.params = [self.We, self.Wr, self.Wv, self.b] + [j for i in self.a for j in i] + [self.beta]     
+            self.params = [self.We, self.Wr, self.Wv, self.b] + [j for i in self.a for j in i]# + [self.beta]     
 
         self.descender = Adagrad(self.params)
 
@@ -128,12 +128,12 @@ class EventPairRNN:
                                       outputs=[h[0], h[1]])
         
         #add fine-grained features
-        phi = T.vector('phi')
+        #phi = T.vector('phi')
 
-        p_y_given_x = T.nnet.softmax(T.dot(h[0][-1, -1], A).T.dot(h[1][-1, -1]) + T.dot(self.beta, phi))
+        p_y_given_x = T.nnet.softmax(T.dot(h[0][-1, -1], A).T.dot(h[1][-1, -1]))# + T.dot(self.beta, phi))
         y_pred = T.argmax(p_y_given_x, axis=1)
         
-        self.classify = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], phi],
+        self.classify = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1]],# , phi],
                                         outputs=y_pred)
 
         y = T.iscalar('y')
@@ -144,7 +144,7 @@ class EventPairRNN:
             grad = T.grad(sentence_nll, self.params)
 
         
-            self.cost_and_grad = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], phi, y],
+            self.cost_and_grad = theano.function(inputs=[idxs[0], rel_idxs[0], p[0], idxs[1], rel_idxs[1], p[1], y], #, phi, y],
                                                  outputs=[sentence_nll] + grad)
         else:
             lambda_e = T.scalar('lambda_e')
@@ -178,7 +178,8 @@ class EventPairRNN:
         
         #lambda_W, lambda_A, lambda_beta
         reg_cost = 0.0
-        regularization = []
+        regularization = [0 for i in range(len(self.params))]
+        '''
         for i,j in enumerate(self.params):
             if i < 4:
                 lamda = lambda_w
@@ -187,9 +188,10 @@ class EventPairRNN:
             else:
                 lamda = lambda_a
 
-            regularization.append(j.get_value()*lamda)
+            regularization[i] = j.get_value()*lamda
             reg_cost += 0.5*lamda*np.linalg.norm(j.get_value())
-            
+        '''
+        
         for index,datum in enumerate(batch):
             if self.pairwise_constraint:
                 cost_and_grad = self.cost_and_grad(*datum, lambda_e=lambda_e)
