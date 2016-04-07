@@ -171,3 +171,8 @@ They showed that using dependency contexts rather than bag of word contexts resu
 vectors to 'florida' using BoW were 'jacksonville', 'tampa', 'fla', whereas using dependencies resulted in 'carolina' and 'california', for example.
 They describe this as a difference between domain similarity and functional similarity.
 For causality, we would expect functional similarity to be more useful as there is some sense of exchangeability in this context.
+
+# 2016-04-06
+
+Finished processing all the events into tuples of predicate, subject(s), object(s), and indirect object(s).
+Implemented negative sampling for events - first sample a predicate, then sample all its arguments given the predicate
