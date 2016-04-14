@@ -171,3 +171,16 @@ They showed that using dependency contexts rather than bag of word contexts resu
 vectors to 'florida' using BoW were 'jacksonville', 'tampa', 'fla', whereas using dependencies resulted in 'carolina' and 'california', for example.
 They describe this as a difference between domain similarity and functional similarity.
 For causality, we would expect functional similarity to be more useful as there is some sense of exchangeability in this context.
+
+# 2016-04-06
+
+Finished processing all the events into tuples of predicate, subject(s), object(s), and indirect object(s).
+
+Implemented negative sampling for events - first sample a predicate, then sample all its arguments given the predicate.
+
+# 2016-04-07
+
+Implemented the shallow dependency RNN with negative sampling.
+
+Initially, I was using the scan function in theano, which is very slow and not optimized and switched to the batched\_dot function which
+works much better (from ~50 data per second to ~10000).
