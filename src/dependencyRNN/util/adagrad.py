@@ -18,13 +18,13 @@ class Adagrad:
         self.h = [theano.shared(value=p.get_value()*0.) for p in self.params]
 
         gradients = [p.type() for p in self.params]
-        gradient_updates = [gradients[i] * self.learning_rate / (T.sqrt(self.h[i]) + self.eps) for i in range(len(gradients))]
+        gradient_updates = [gradients[i] * self.learning_rate / (T.sqrt(self.h[i] + gradients[i]**2) + self.eps) for i in range(len(gradients))]
 
-        updates=collections.OrderedDict((h, h + g**2) for h,g in zip(self.h,gradients))
-        updates.update((p, p-g) for p,g in zip(self.params,gradient_updates))
+        updates=collections.OrderedDict((p, p-g) for p,g in zip(self.params,gradient_updates))
+        updates.update((h, h + g**2) for h,g in zip(self.h,gradients))
         self.gradient_descent = theano.function(inputs=gradients,
                                                 updates=updates)
-
+                        
     def reset_weights(self):
         for i in self.h:
             i.set_value(i.get_value()*0.)
