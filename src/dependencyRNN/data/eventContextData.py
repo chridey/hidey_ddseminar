@@ -9,9 +9,9 @@ import numpy as np
 from scipy.stats import rv_discrete
 
 def countDictToProbList(counts):
-    values = probs.values()
+    values = counts.values()
     total = sum(values)
-    keys = probs.keys()
+    keys = counts.keys()
     for i in range(len(values)):
         values[i] /= total
 
@@ -37,6 +37,31 @@ def makeEvent(predicate, subjects, objects, indirectObjects):
 
     return idxs, rel_idxs, p
 
+def makeEvent(predicate, subjects, objects, indirectObjects, padding=1):
+    parent = [predicate]
+    children = []
+    relations = []
+    mask = []
+    maxLength = max([len(subjects), len(objects), len(indirectObjects)])
+    padding = max(maxLength, padding)
+    for index,arguments in enumerate((subjects, objects, indirectObjects)):
+        children += list(arguments)
+        children += [0]*(padding-len(arguments))
+        relations += [index]*padding
+        mask += ([1]*len(arguments) + [0]*(padding-len(arguments)))
+    return parent, children, relations, mask
+
+def padEvent(event, padding):
+    parent,children,relations,mask = event
+    orig = len(children) // 3
+
+    diff = padding-orig
+    children = children[:orig] + [0]*diff + children[orig:2*orig] + [0]*diff + children[2*orig:] + [0]*diff
+    relations = relations[:orig] + [0]*diff + relations[orig:2*orig] + [0]*diff + relations[2*orig:] + [0]*diff
+    mask = mask[:orig] + [0]*diff + mask[orig:2*orig] + [0]*diff + mask[2*orig:] + [0]*diff
+    
+    return parent, children, relations, mask
+    
 class EventContextData:
     def __init__(self, indir):
         self.indir = indir
@@ -53,7 +78,7 @@ class EventContextData:
     def iterArticles(self, shuffle=False, verbose=False):
         filenames = sorted(os.listdir(self.indir))
         if shuffle:
-            np.shuffle(filenames)
+            np.random.shuffle(filenames)
 
         for filename in filenames:
             if verbose:
@@ -72,12 +97,12 @@ class EventContextData:
                           sum(len(i[3]) > 0 for i in z))
 
                 if shuffle:
-                    np.shuffle(batch)
+                    np.random.shuffle(batch)
                     
                 for article in batch:
                     yield article
 
-    def processArgumentProbs(self, verbose=False):
+    def processArgumentCounts(self, verbose=False):
 
         for article in self.iterArticles(verbose=verbose):
             for event in article:
@@ -89,32 +114,71 @@ class EventContextData:
                         self.argumentCounts[index+1][predicate][tuple(arguments)] = 0.
                     self.argumentCounts[index+1][predicate][tuple(arguments)] += 1.
 
-        #normalize
-        if verbose:
-            print('normalizing...')
-            
-        self.predicateProbs = countDictToProbList(self.predicateCounts)
+    @property
+    def wordCounts(self):
+        if getattr(self, '_wordCounts', None) is None:
+            self._wordCounts = collections.defaultdict(int)
+            for word in self.predicateCounts:
+                self._wordCounts[word] += self.predicateCounts[word]
 
-        self.argumentProbs = [self.predicateProbs, {}, {}, {}]
-                              
-        for index,argument in enumerate(self.argumentCounts[1:]):
-            for lhs in argument:
-                self.argumentProbs[index+1][lhs] = countDictToProbList(argument[lhs])
+            for argumentCount in self.argumentCounts[1:]:
+                for predicate in argumentCount:
+                    for arguments in argumentCount[predicate]:
+                        for argument in arguments:
+                            self._wordCounts[argument] += argumentCount[predicate][tuple(arguments)]
+        
+        return self._wordCounts
 
-    def setArgumentProbs(self, predicateProbs, subjectProbs, objectProbs, indirectObjectProbs):
-        self.predicateProbs = predicateProbs 
-        self.subjectProbs = subjectProbs 
-        self.objectProbs = objectProbs
-        self.indirectObjectProbs = indirectObjectProbs
+    def setArgumentCounts(self, predicateCounts, subjectCounts, objectCounts, indirectObjectCounts):
+        self.predicateCounts = predicateCounts 
+        self.subjectCounts = subjectCounts 
+        self.objectCounts = objectCounts
+        self.indirectObjectCounts = indirectObjectCounts
 
-        self.argumentProbs = [self.predicateProbs,
-                              self.subjectProbs,
-                              self.objectProbs,
-                              self.indirectObjectProbs]
+        self.argumentCounts = [self.predicateCounts,
+                              self.subjectCounts,
+                              self.objectCounts,
+                              self.indirectObjectCounts]
 
-    def saveArgumentProbs(prefix):
-        pass
-    
+    def saveArgumentCounts(self, prefix):
+        keys, values = self.predicateCounts.keys(), self.predicateCounts.values()
+
+        with open(prefix + '.predicates.json', 'w') as f:
+            json.dump([keys, values], f)
+
+        for argumentName,arguments in (('subjects', self.subjectCounts),
+                                       ('objects', self.objectCounts),
+                                       ('indirectObjects', self.indirectObjectCounts)):
+            keys = arguments.keys()
+            values = []
+            for key in arguments:
+                values.append([arguments[key].keys(),
+                              arguments[key].values()])
+
+            with open(prefix + '.{}.json'.format(argumentName), 'w') as f:
+                json.dump([keys, values], f)            
+
+    @classmethod
+    def loadArgumentCounts(cls, indir, prefix):
+        print('loading predicates...')
+        with open(prefix + '.predicates.json') as f:
+            keys,values = json.load(f)
+        argumentCounts = [dict(zip(keys,values)), {}, {}, {}]
+
+        for i,argumentName in enumerate(('subjects', 'objects', 'indirectObjects')):
+            print('loading {}'.format(argumentName))
+            with open(prefix + '.{}.json'.format(argumentName)) as f:
+                keys, values = json.load(f)
+
+            for j in range(len(keys)):
+                argumentCounts[i+1][keys[j]] = dict(zip(map(tuple,values[j][0]),
+                                                        values[j][1]))
+        
+        ec = cls(indir)
+        ec.setArgumentCounts(*argumentCounts)
+
+        return ec
+        
     def iterEventBatches(self, shuffle=False, verbose=False):
         for article in self.iterArticles(shuffle=shuffle, verbose=verbose):
             ret_batch = []
@@ -124,40 +188,77 @@ class EventContextData:
 
             yield ret_batch
 
-    def sampleEvent(self):
+    def makeFlattenedArguments(self):
+        self.flattenedArguments = [collections.defaultdict(list) for i in range(3)]
+                              
+        for i in range(1,4):
+            print(i)
+            for j in self.argumentCounts[i]:
+                for k in self.argumentCounts[i][j]:
+                    self.flattenedArguments[i-1][j] += ([k] * int(self.argumentCounts[i][j][k]))
+
+    def sampleEvent(self, padding=1):
         if getattr(self, 'predicateDist', None) is None:
-            self.predicateDist = rv_discrete(values=self.predicateProbs)
+            print('making predicateDist...')
+            self.predicateDist = rv_discrete(values=countDictToProbList(self.predicateCounts))
             
         #first sample a predicate
-        #predicate = np.random.choice(self.predicateProbs[0],
-        #                             p=self.predicateProbs[1])
-        #choice = np.random.multinomial(1, self.predicateProbs[1])
-        #predicate = self.predicateProbs[0][choice]
-        predicate = self.predicateDist.rvs(1)
+        predicate = self.predicateDist.rvs(size=1)[0]
         
         #then sample all the arguments given the predicate
         arguments = [predicate]
-        for i in range(1,4):
-            if not len(self.arguments[i][predicate]):
-                print(predicate, i)
-                argument = tuple()
-            elif len(self.arguments[i][predicate][0]) <= 1:
-                argument = tuple()
-            else:
-                choice = np.random.choice(len(self.argumentProbs[i][predicate][0]),
-                                          p=self.argumentProbs[i][predicate][1])
-                argument = self.arguments[i][predicate][0][choice]
-                #choice = np.random.multinomial(1, self.arguments[i][predicate][1])
-                #predicate = self.arguments[i][predicate][0][choice]
-        
+        for i in range(3):
+            if getattr(self, 'flattenedArguments', None) is None:
+                self.makeFlattenedArguments()
+
+            choice = np.random.randint(len(self.flattenedArguments[i][predicate]))
+            argument = self.flattenedArguments[i][predicate][choice]
+            
             arguments.append(argument)
 
         #return arguments
-        return makeEvent(*arguments)
+        return makeEvent(*arguments, padding=padding)
         
     def iterEventContext(self, window=2, shuffle=False, verbose=False):
         for eventBatch in self.iterEventBatches(shuffle, verbose):
             for i in range(len(eventBatch)):
-                for context in eventBatch[i-window:i+window+1]:
+                for context in eventBatch[i-window:i]:
                     yield eventBatch[i] + context
-                    
+                for context in eventBatch[i+1:i+window+1]:
+                    yield eventBatch[i] + context
+
+    #for each event and context and negative sample
+    #add this datapoint to the max size buffer
+    def iterEventBuffer(self, size=10000, window=2, shuffle=False, verbose=False):
+        self.eventBuffer = {}
+        for eventAndContext in self.iterEventContext(window, shuffle, verbose):
+            maxLength = max((len(eventAndContext[1]) // 3, len(eventAndContext[5]) // 3))
+            negativeSample = self.sampleEvent(maxLength)
+
+            #there is a chance that we sampled an event that has some of its arguments
+            #longer than all of the arguments in the event and context
+            #in this case, we need to pad eventAndContext
+            if len(negativeSample[1]) // 3 > maxLength:
+                #print('padding from {} to {}'.format(maxLength, len(negativeSample[1]) // 3))
+                maxLength = len(negativeSample[1]) // 3
+                paddedEvent = padEvent(eventAndContext[:4], maxLength)
+                paddedContext = padEvent(eventAndContext[4:], maxLength)
+                eventAndContext = paddedEvent + paddedContext
+            elif len(eventAndContext[1]) // 3 < maxLength:
+                paddedEvent = padEvent(eventAndContext[:4], maxLength)
+                eventAndContext = paddedEvent + eventAndContext[4:]
+            elif len(eventAndContext[5]) // 3 < maxLength:                
+                paddedContext = padEvent(eventAndContext[4:], maxLength)
+                eventAndContext = eventAndContext[:4] + paddedContext
+                
+            datum = eventAndContext + negativeSample
+                
+            if maxLength not in self.eventBuffer:
+                self.eventBuffer[maxLength] = [[] for i in range(12)]
+
+            for i in range(len(datum)):
+                self.eventBuffer[maxLength][i].extend(datum[i])
+
+            if len(self.eventBuffer[maxLength][0]) >= size:
+                yield self.eventBuffer[maxLength]
+                del self.eventBuffer[maxLength]
