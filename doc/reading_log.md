@@ -140,11 +140,15 @@ As far as I know, these models are not often used in NLP research.  It seems lik
 from text) and latent effects (embeddings or another dimensionality reduction method), as other random effects models would be.
 
 Braun and McAuliffe describe variational inference methods for discrete choice models. Their methods 
-where there is a latent vector $\theta\_h$ encoding preferences for items for each actor $h$.
+focus on heterogenous discrete choice models which are based on hierarchical regression.  The choices are dependent on
+ a latent vector $\theta\_h$ encoding preferences for items for each actor $h$.  Posterior inference then results in $h$ being dependent
+ on all actors $1..H$.  Variational inference has been shown to converge much faster than MCMC for these models.
+ 
 They derive posterior updates for multinomial logit models specifically.
 The probability of a choice is modeled using a softmax, where the features are the attributes for each choice and agent and the weights beta are
 for each agent.
 They use a multivariate normal prior for $\beta$, allowing for interaction between agents. They also use hyperpriors for the mean and standard deviation.
+
 
 Discussion:
 
