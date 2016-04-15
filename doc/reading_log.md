@@ -131,3 +131,17 @@ Poisson process is a way to provide counts for elements in grouped data.  They a
 process and then marginalize out $G$, leading to a negative binomial process.  As this prior is conjugate the posterior is conditionally conjugate.
 One downside to the gamma-Poisson process is that although it can be equivalently expressed as a Dirichlet process, it leads to the same mixture proportions across
 groups in mixture modeling.  Thus they introduce the gamma-NB process, where the parameters are group dependent.
+
+# 201
+
+I read some background material on discrete choice models, reading about logit and probit
+random utility models and models that allow for interaction between variables such as the conditional probit and nested logit.
+As far as I know, these models are not often used in NLP research.  It seems like they could be useful for modeling observed effects (features derived
+from text) and latent effects (embeddings or another dimensionality reduction method), as other random effects models would be.
+
+Braun and McAuliffe describe variational inference methods for discret choice models.
+allowing for interaction between agents. They also use hyperpriors for the mean and standard deviation.
+
+Discussion:
+
+1) Are discrete choice models 
