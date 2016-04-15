@@ -139,9 +139,14 @@ random utility models and models that allow for interaction between variables su
 As far as I know, these models are not often used in NLP research.  It seems like they could be useful for modeling observed effects (features derived
 from text) and latent effects (embeddings or another dimensionality reduction method), as other random effects models would be.
 
-Braun and McAuliffe describe variational inference methods for discret choice models.
-allowing for interaction between agents. They also use hyperpriors for the mean and standard deviation.
+Braun and McAuliffe describe variational inference methods for discrete choice models. Their methods 
+where there is a latent vector $\theta\_h$ encoding preferences for items for each actor $h$.
+They derive posterior updates for multinomial logit models specifically.
+The probability of a choice is modeled using a softmax, where the features are the attributes for each choice and agent and the weights beta are
+for each agent.
+They use a multivariate normal prior for $\beta$, allowing for interaction between agents. They also use hyperpriors for the mean and standard deviation.
 
 Discussion:
 
-1) Are discrete choice models 
+1) Are discrete choice models ever used for reinforcement or imitation learning?  These models are common in NLP but the state space is often modeled
+using a neural network.
