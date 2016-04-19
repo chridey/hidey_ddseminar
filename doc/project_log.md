@@ -199,4 +199,11 @@ performance improves from 5% but seems to be converging very slowly.  Iterating 
 The next steps will be to set the min count higher.  For a min count of 10, there are only about 600,000 words in the vocabulary, which is much faster
 to train.  Furthermore I will also test using different contexts, in this case using the discourse connective and only considering those events
 during training.
-is to train 
+
+# 2016-04-19
+
+Trained a new model using different contexts: only considering events on either side of a causal connective ("because", "therefore", "owing to", etc)
+
+Wrote code to compare event embeddings, similar to word embeddings, we can determine the most similar events as well as the most predictive events
+
+Now training a model with a min count of 100, reducing the number of events to 75,000,000, which will only take a few days to train. 
