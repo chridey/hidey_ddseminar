@@ -131,3 +131,25 @@ Poisson process is a way to provide counts for elements in grouped data.  They a
 process and then marginalize out $G$, leading to a negative binomial process.  As this prior is conjugate the posterior is conditionally conjugate.
 One downside to the gamma-Poisson process is that although it can be equivalently expressed as a Dirichlet process, it leads to the same mixture proportions across
 groups in mixture modeling.  Thus they introduce the gamma-NB process, where the parameters are group dependent.
+
+# 2016-04-15 Braun and McAuliffe 2010
+
+I read some background material on discrete choice models, reading about logit and probit
+random utility models and models that allow for interaction between variables such as the conditional probit and nested logit.
+As far as I know, these models are not often used in NLP research.  It seems like they could be useful for modeling observed effects (features derived
+from text) and latent effects (embeddings or another dimensionality reduction method), as other random effects models would be.
+
+Braun and McAuliffe describe variational inference methods for discrete choice models. Their methods 
+focus on heterogenous discrete choice models which are based on hierarchical regression.  The choices are dependent on
+ a latent vector $\theta\_h$ encoding preferences for items for each actor $h$.  Posterior inference then results in $h$ being dependent
+ on all actors $1..H$.  Variational inference has been shown to converge much faster than MCMC for these models.
+ 
+They derive posterior updates for multinomial logit models specifically.
+The probability of a choice is modeled using a softmax, where the features are the attributes for each choice and agent and the weights beta are
+for each agent.
+They use a multivariate normal prior for $\beta$, allowing for interaction between agents. They also use hyperpriors for the mean and standard deviation.
+
+Discussion:
+
+1) Are discrete choice models ever used for reinforcement or imitation learning?  These models are common in NLP but the state space is often modeled
+using a neural network.

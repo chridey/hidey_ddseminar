@@ -183,4 +183,20 @@ Implemented negative sampling for events - first sample a predicate, then sample
 Implemented the shallow dependency RNN with negative sampling.
 
 Initially, I was using the scan function in theano, which is very slow and not optimized and switched to the batched\_dot function which
-works much better (from ~50 data per second to ~10000).
+works much better (from ~50 data per second to ~1000).
+
+# 2016-04-14
+
+Trained a model using the full vocabulary from Wikipedia (min count of 1).  This results in 119,000,000 events and 12,600,000 words.  Under this
+scenario it takes about 6 seconds to sample 10,000 events and 30 seconds to train these events (slower than 1000 per second). 
+
+For testing, I am using a dataset from 2011 where the researchers had annotated news articles for cause and effect between events.  Each event has its 
+predicate marked and a pair of events is marked as either causal or related. 
+
+The current trained model performs very poorly, around 10% precision and recall.  I saved several models at different stages of training and the
+performance improves from 5% but seems to be converging very slowly.  Iterating over the entire dataset would take several days at this rate.  
+
+The next steps will be to set the min count higher.  For a min count of 10, there are only about 600,000 words in the vocabulary, which is much faster
+to train.  Furthermore I will also test using different contexts, in this case using the discourse connective and only considering those events
+during training.
+is to train 
