@@ -14,6 +14,9 @@ def evalMinCount(word, wordCounts, minCount, vocab):
     if word not in vocab:
         return False
     index = vocab[word]
+
+    #print(word, wordCounts.get(str(index), None))
+    
     if str(index) not in wordCounts or wordCounts[str(index)] < minCount:
         return False
     return True
@@ -25,13 +28,17 @@ if len(sys.argv) > 2:
     wordCountsFile = sys.argv[2]
     minCount = int(sys.argv[3])
     vocabFile = sys.argv[4]
-    
+
+    print('loading wordCounts')
     with open(wordCountsFile) as f:
         wordCounts = json.load(f)
+    print('loading vocab')
     with gzip.open(vocabFile) as f:
         vocab = json.load(f)
 else:
     wordCounts = None
+    minCount = 0
+    vocab = None
     
 total = 0
 count = 0
@@ -54,7 +61,8 @@ for inputFile in sorted(inputFiles):
             for sentence in articles[title]:
                 dep = sentence['dep']
                 words = sentence['words']
-
+                pos = sentence['pos']
+                
                 #print(words, dep)
                 for i in range(len(dep)):
                     depTuples = dependencyUtils.tripleToList(dep[i], len(words[i]), True)
@@ -65,6 +73,9 @@ for inputFile in sorted(inputFiles):
                     es = dependencyUtils.getAllEventsAndArguments(depTuples)
 
                     for e in es:
+                        if pos[i][e][:2] != 'VB':
+                            continue
+                        
                         if 'nsubjpass' in es[e]:
                             predicate = words[i][e].lower() + '_(passive)'
                             key = 'nsubjpass'
@@ -72,6 +83,7 @@ for inputFile in sorted(inputFiles):
                             predicate = words[i][e].lower()
                             key = 'nsubj'
 
+                        #print(predicate)
                         if not evalMinCount(predicate,
                                             wordCounts,
                                             minCount,
@@ -87,6 +99,7 @@ for inputFile in sorted(inputFiles):
                                 else:
                                     arg = words[i][j].lower()
 
+                                #print(argType)
                                 if not evalMinCount(arg,
                                                     wordCounts,
                                                     minCount,

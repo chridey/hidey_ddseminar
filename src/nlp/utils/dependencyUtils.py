@@ -1,11 +1,13 @@
 import collections
 
-def tripleToList(dependencies, length, multipleParents=False):
+def tripleToList(dependencies, length, multipleParents=False, ignoreOutOfBounds=False):
     '''take in a list of triples (gov, dep, rel)
     and return a list of doubles (rel, gov)
     where the dep is in sentence order'''
     ret = [None] * length
     for gov,dep,rel in dependencies:
+        if dep >= length and ignoreOutOfBounds:
+            continue
         if multipleParents:
             if ret[dep] is None:
                 ret[dep] = []
