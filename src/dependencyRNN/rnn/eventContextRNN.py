@@ -6,6 +6,8 @@ import numpy as np
 
 from dependencyRNN.util.activation import normalized_tanh
 
+from dependencyRNN.util.adagrad import Adagrad
+
 from sklearn.metrics import precision_recall_fscore_support
 
 class EventContextRNN:
@@ -15,6 +17,9 @@ class EventContextRNN:
         
         #d = dimensionality of embeddings
         #V = size of vocabulary
+        #r = number of dependency relations
+
+        self.d = d
         
         #|V| x d embedding matrix for event and context
         if embeddings is None:
@@ -112,6 +117,10 @@ class EventContextRNN:
         learning_rate = T.scalar('learning_rate')
         updates = [(self.params[i], self.params[i] - learning_rate * grad[i]) for i in range(len(self.params))]
 
+        #adagrad = Adagrad(self.params)
+
+        #updates = adagrad.updates
+
         self.train = theano.function(inputs = [x_idxs, x_child_idxs, x_rel_idxs, x_child_mask,
                                                c_idxs, c_child_idxs, c_rel_idxs, c_child_mask,
                                                n_idxs, n_child_idxs, n_rel_idxs, n_child_mask,
@@ -139,7 +148,7 @@ class EventContextRNN:
         #save all the weights and hyperparameters to a file
         kwds = {}
         for param in self.params:
-            np.save(prefix + param.name + '.npy', param)
+            np.save(prefix + param.name + '.npy', param.get_value())
 
     @classmethod
     def load(cls, prefix):
