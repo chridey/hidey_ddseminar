@@ -153,3 +153,8 @@ Discussion:
 
 1) Are discrete choice models ever used for reinforcement or imitation learning?  These models are common in NLP but the state space is often modeled
 using a neural network.
+
+# 2016-04-22 Hoff et al. 2002
+
+Hoff et al. describe models for latent space analysis of social networks.  These social networks are N x N matrices where $x\_{ij}$ represents
+the relationship between "actors" i and j.  
