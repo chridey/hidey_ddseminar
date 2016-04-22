@@ -156,5 +156,8 @@ using a neural network.
 
 # 2016-04-22 Hoff et al. 2002
 
-Hoff et al. describe models for latent space analysis of social networks.  These social networks are N x N matrices where $x\_{ij}$ represents
-the relationship between "actors" i and j.  
+Hoff et al. describe models for latent space analysis of social networks.  These social networks are N x N matrices where $y\_{ij}$ is an indicator variable 
+representing the relationship between "actors" i and j.  These networks can be directed or undirected.  In all models, they assume the indicator variable
+for a specific i,j is independence of the other indicator variables given the latent space parameters $z\_i$ and $z\_j$, characteristics $x\_{ij}$ and 
+latent parameters \theta.  For the distance model, the probability of a tie depends on the distance between $z\_i$ and $z\_j$, which may be the
+Euclidean distance or some other distance that satisfies the triangle inequality.
