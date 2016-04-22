@@ -175,9 +175,10 @@ to sample and update the parameters using Metropolis-Hastings.
 Discussion:
 
 Overall, I understand why this is a classic paper as it is straightforward and provides very useful and applicable models.  
-It seems like these models would be useful in contexts besides social networks, but rather to model any relationships between participants.
+
+1) It seems like these models would be useful in contexts besides social networks, but rather to model any relationships between participants.
 For example, as with many other papers we've read in this class, one could model word-context matrices and use any distance function
 to derive the embeddings $z\_i$ and $z\_j$.
 
-1) Could other kernel functions besides Euclidean distance be substituted?  Would they need to be a valid kernel (positive semidefinite)
+2) Could other kernel functions besides Euclidean distance be substituted?  Would they need to be a valid kernel (positive semidefinite)
 or could you use tree kernels, for example?
