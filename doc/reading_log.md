@@ -160,4 +160,24 @@ Hoff et al. describe models for latent space analysis of social networks.  These
 representing the relationship between "actors" i and j.  These networks can be directed or undirected.  In all models, they assume the indicator variable
 for a specific i,j is independence of the other indicator variables given the latent space parameters $z\_i$ and $z\_j$, characteristics $x\_{ij}$ and 
 latent parameters \theta.  For the distance model, the probability of a tie depends on the distance between $z\_i$ and $z\_j$, which may be the
-Euclidean distance or some other distance that satisfies the triangle inequality.
+Euclidean distance or some other distance that satisfies the triangle inequality. The natural parameters are a function of this distance, the weighted
+characteristics, and a bias.  If there are no covariate characteristics, then the model is necessarily undirected.  The second model considers the
+angle between the latent vectors and can be used to model directed relationships where one actor is more "active."  
+
+For inference, they describe a Metropolis-Hastings algorithm initialized using the MLE of Z.
+(This section seemed very rushed and seemed to assume the reader is already familiar with a Bayesian approach). 
+They explain that Euclidean distance is invariant under rotation, transformation, and translation so there are an
+infinite number of valid Zs.  So they simultaneously find the Z\*=TZ that is minimally different from the initialization Z\_0,
+where T is all possible rotations, transformations, and translations using a modification of the normal equations.
+They first initialize Z by taking the MLE of another distance metric between actors.  Then they create a Markov chain
+to sample and update the parameters using Metropolis-Hastings.
+
+Discussion:
+
+Overall, I understand why this is a classic paper as it is straightforward and provides very useful and applicable models.  
+It seems like these models would be useful in contexts besides social networks, but rather to model any relationships between participants.
+For example, as with many other papers we've read in this class, one could model word-context matrices and use any distance function
+to derive the embeddings $z\_i$ and $z\_j$.
+
+1) Could other kernel functions besides Euclidean distance be substituted?  Would they need to be a valid kernel (positive semidefinite)
+or could you use tree kernels, for example?
