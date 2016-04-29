@@ -29,3 +29,48 @@ def extractEvents(dependencies, words, duplicate=False):
         events.append([predicate] + arguments)
 
     return events
+
+#make interaction features
+#combine everything that matches pattern a with pattern b
+def makeInteractionFeatures(features, pattern1, pattern2):
+    new_features = {}
+    for i in itertools.product(filter(lambda x:pattern1 in x, features.keys()),
+                               filter(lambda x:pattern2 in x, features.keys())):
+        new_features['_'.join(i)] = True
+    return new_features
+
+def filterFeatures(features, patterns=None, antipatterns=None):
+    new_features = {}
+    for feature in features:
+        if (patterns is None or any(pattern in feature for pattern in patterns)) and (antipatterns is None or not any(antipattern in feature for antipattern in antipatterns)):
+            new_features[feature] = features[feature]
+
+    return new_features
+
+def modifyFeatureSet(features, include=None, ablate=None, interaction=None):
+    if include:
+        features = filterFeatures(features,
+                                  include.split(','),
+                                  None)
+        
+    if ablate:
+        features = filterFeatures(features,
+                                  None,
+                                  ablate.split(','))
+                
+    if interaction:
+        filtered_features = filterFeatures(features,
+                                           interaction['include'],
+                                           interaction['ablate'])
+                                                                    
+        interaction_features = makeInteractionFeatures(filtered_features,
+                                                       interaction['first'],
+                                                       interaction['second'])
+        features.update(interaction_features)
+
+    return features
+
+def createModifiedDataset(dataset, include=None, ablate=None, interaction=None):
+    for data in dataset:
+        data = modifyFeatureSet(data, include, ablate, interaction)
+    return dataset
