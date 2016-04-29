@@ -23,7 +23,7 @@ class Adagrad:
         self.updates=collections.OrderedDict((p, p-g) for p,g in zip(self.params,gradient_updates))
         self.updates.update((h, h + g**2) for h,g in zip(self.h,gradients))
         self.gradient_descent = theano.function(inputs=gradients,
-                                                updates=updates)
+                                                updates=self.updates)
                         
     def reset_weights(self):
         for i in self.h:
