@@ -15,4 +15,4 @@ def matchEmbeddings(model, vocab, dimension=100):
             embedding = np.random.uniform(-2, -2, dimension)
         embeddings[vocab[word]] = embedding
             
-    return np.array(embeddings)
+    return np.array(embeddings, dtype=np.float64)
