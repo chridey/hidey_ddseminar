@@ -6,14 +6,23 @@ import numpy as np
 class AltlexDiscourseData:
     def __init__(self, filename, balance=None, verbose=False,
                  pairwise_constraint=False,
-                 features=None):
+                 features=None,
+                 combined=False,
+                 rnn=True):
 
         with open(filename) as f:
             data = json.load(f)
 
         self.features = features
         self.pairwise = pairwise_constraint
-
+        self.rnn = rnn
+        
+        if combined:
+            new_data = []
+            for i in data:
+                new_data.append(i[:-1] + [i[-1] > 0])
+            data = new_data
+        
         #balance data
         if balance is not None:
             c = collections.Counter([i[-1] for i in data])
@@ -136,6 +145,7 @@ class AltlexDiscourseData:
                 print (key, len(self.buffer[key]))
 
     def iterBatches(self, batch_size = 100, shuffle=False, verbose=False, uniform=False):
+
         if self.pairwise:
             assert(batch_size % 2 == 0)
 
@@ -164,8 +174,11 @@ class AltlexDiscourseData:
 
             if self.features is not None:
                 indices = self.featureBuffer[key][i*batch_size:(i+1)*batch_size]
-                yield ret[:4] + [self.features[indices]] + ret[4:]
-            else:
+                if self.rnn:
+                    yield ret[:4] + [self.features[indices]] + ret[4:]
+                else:
+                    yield [self.features[indices]] + ret[4:]
+            elif self.rnn:
                 yield ret
 
     @property
