@@ -5,6 +5,7 @@ import time
 
 from sklearn.metrics import precision_score,recall_score,precision_recall_fscore_support
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.externals import joblib
 
 import scipy.sparse as sp
 
@@ -23,18 +24,26 @@ if __name__ == '__main__':
     
     parser.add_argument('--testfile', 
                         help='file containing the causal or non-causal sentences, processed')
+    parser.add_argument('--tunefile', 
+                        help='file containing the causal or non-causal sentences, processed')
 
     parser.add_argument('--train_features')
-    parser.add_argument('--test_features')    
+    parser.add_argument('--test_features')
+    parser.add_argument('--tune_features')        
 
     parser.add_argument('--balance',
                         type=int)
+    parser.add_argument('--combined',
+                        action='store_true')
 
     parser.add_argument('--pairwise',
                         action='store_true')
 
     parser.add_argument('--embeddings')
-
+    parser.add_argument('--beta')    
+    parser.add_argument('--fixed_beta',
+                        action='store_true')
+    
     parser.add_argument('--dimension',
                         type = int,
                         default = 100)
@@ -48,11 +57,22 @@ if __name__ == '__main__':
                         type=int,
                         default=100)
 
+    parser.add_argument('--alpha',
+                        type=float,
+                        default=0.001)
+    parser.add_argument('--l1_ratio',
+                        type=float,
+                        default=0.15)
+    
     parser.add_argument('--include')
     parser.add_argument('--ablate')    
-
+    parser.add_argument('--int',
+                        help='add intercept',
+                        action='store_true')    
     parser.add_argument('--save')
     parser.add_argument('--load')
+
+    parser.add_argument('--vectorizer')
 
     parser.add_argument('--verbose',
                         action= 'store_true')
@@ -69,35 +89,66 @@ if __name__ == '__main__':
         embeddings = None
         size = args.size
 
+    if args.beta:
+        beta = np.load(args.beta)
+    else:
+        beta = None
+
     if args.train_features:
         assert(args.test_features)
-        dv = DictVectorizer()
         with open(args.train_features) as f:
             features = json.load(f)
-        features = utils.createModifiedDataset(features, args.include, args.ablate)
-        train_features = sp.csc_matrix(dv.fit_transform(features))
+        features = utils.createModifiedDataset(features, args.include, args.ablate,
+                                               add_bias=args.int)
+        if args.vectorizer:
+            dv = joblib.load(args.vectorizer)
+            train_features = sp.csc_matrix(dv.transform(features))
+        else:
+            dv = DictVectorizer()
+            train_features = sp.csc_matrix(dv.fit_transform(features))
         
         with open(args.test_features) as f:
             features = json.load(f)
-        features = utils.createModifiedDataset(features, args.include, args.ablate)
+        features = utils.createModifiedDataset(features, args.include, args.ablate,
+                                               add_bias=args.int)
         test_features = sp.csc_matrix(dv.transform(features))
+
+        if args.tune_features:
+            with open(args.tune_features) as f:
+                features = json.load(f)
+            features = utils.createModifiedDataset(features, args.include, args.ablate,
+                                                   add_bias=args.int)
+            tune_features = sp.csc_matrix(dv.transform(features))
 
         print(train_features.shape)
         print(test_features.shape)
+        if args.tune_features:
+            print(tune_features.shape)
     else:
         train_features = None
         test_features = None
+        tune_features = None
         
     if args.verbose:
         print(args.dimension, size, len(relations))
 
     iterator = AltlexDiscourseData(args.trainfile, args.balance, args.verbose,
                                    pairwise_constraint=args.pairwise,
-                                   features=train_features)
+                                   features=train_features,
+                                   combined=args.combined,
+                                   rnn='rnn' not in args.ablate)
 
     if args.testfile:
         testIterator = AltlexDiscourseData(args.testfile, verbose=args.verbose,
-                                           features=test_features)
+                                           features=test_features,
+                                           combined=args.combined,
+                                           rnn='rnn' not in args.ablate)
+    if args.tunefile:
+        tuneIterator = AltlexDiscourseData(args.tunefile, verbose=args.verbose,
+                                           balance=args.balance,
+                                           features=tune_features,
+                                           combined=args.combined,
+                                           rnn='rnn' not in args.ablate)
 
     adrnn = AltlexDiscourseRNN(args.dimension,
                                size,
@@ -105,8 +156,16 @@ if __name__ == '__main__':
                                embeddings=embeddings,
                                pairwise_constraint=args.pairwise,
                                nc = len(set(iterator.labels)),
-                               nf = 0 if train_features is None else train_features.shape[1])
-    
+                               nf = 0 if train_features is None else train_features.shape[1],
+                               lambda_w=args.alpha,
+                               lambda_e=args.alpha,
+                               lambda_f=args.alpha,
+                               rnn='rnn' not in args.ablate,
+                               l1_ratio=args.l1_ratio,
+                               beta=beta,
+                               fixed_beta=args.fixed_beta)
+
+    best_fscore = 0
     for i in range(args.num_epochs):
         print('epoch {}'.format(i))
         for j,batch in enumerate(iterator.iterBatches(args.batch_size,
@@ -118,6 +177,22 @@ if __name__ == '__main__':
             
             print ("epoch: {} batch: {} cost: {} time: {}".format(i, j, cost, time.time()-start))
 
+            if args.tunefile:
+                predictions = []
+                for tuneBatch in tuneIterator.iterBatches():
+                    predictions += adrnn.classify(*tuneBatch[:-1]).tolist()
+                labels = tuneIterator.labels
+
+                precision,recall,fscore,_ = (precision_recall_fscore_support(labels, predictions))
+                print("Precision: {}".format(precision))
+                print("Recall: {}".format(recall))
+                print("Fscore: {}".format(fscore))
+
+                if fscore[1] > best_fscore:
+                    print('saving best model')
+                    adrnn.save('{}.{}.{}'.format(args.save, i,j))
+                    best_fscore = fscore[1]
+                    
             if args.testfile:
                 predictions = []
                 for testBatch in testIterator.iterBatches():
