@@ -47,7 +47,7 @@ def filterFeatures(features, patterns=None, antipatterns=None):
 
     return new_features
 
-def modifyFeatureSet(features, include=None, ablate=None, interaction=None):
+def modifyFeatureSet(features, include=None, ablate=None, interaction=None, add_bias=False):
     if include:
         features = filterFeatures(features,
                                   include.split(','),
@@ -68,9 +68,13 @@ def modifyFeatureSet(features, include=None, ablate=None, interaction=None):
                                                        interaction['second'])
         features.update(interaction_features)
 
+    if add_bias:
+        features['bias'] = 1
+
     return features
 
-def createModifiedDataset(dataset, include=None, ablate=None, interaction=None):
+def createModifiedDataset(dataset, include=None, ablate=None, interaction=None, add_bias=False):
+    ret = []
     for data in dataset:
-        data = modifyFeatureSet(data, include, ablate, interaction)
-    return dataset
+        ret.append(modifyFeatureSet(data, include, ablate, interaction, add_bias))
+    return ret
