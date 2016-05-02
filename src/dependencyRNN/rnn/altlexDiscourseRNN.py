@@ -17,12 +17,24 @@ class AltlexDiscourseRNN:
                  pairwise_constraint=False,
                  lambda_w=0.01,
                  lambda_e=0.01,
-                 lambda_f=0.01):
+                 lambda_f=0.01,
+                 learning_rate='optimal',
+                 rnn=True,
+                 l1_ratio=0.15,
+                 beta=None,
+                 fixed_beta=True):
+
+        assert(0 <= l1_ratio <= 1)
+
+        if not rnn:
+            print('skipping rnn...')
 
         #d = dimensionality of embeddings
         #V = size of vocabulary
         #r = number of dependency relations
         #nc = number of classes for classification
+
+        self.learning_rate = learning_rate
         
         #|V| x d embedding matrix
         if embeddings is None:
@@ -68,13 +80,20 @@ class AltlexDiscourseRNN:
                                           value=0.2 * np.random.uniform(-1.0, 1.0, (nf))
                                           ).astype(theano.config.floatX)                        
 
-        if nf > 0:
-            self.params = [self.We, self.Wr, self.Wv, self.b, self.gamma, self.beta]
-        else:
-            self.params = [self.We, self.Wr, self.Wv, self.b, self.gamma] 
+        if nf > 0 and beta is not None:
+            self.beta = theano.shared(name='beta', 
+                                      value=beta
+                                      ).astype(theano.config.floatX)
+            
+        self.params = []
+        if rnn:
+            self.params += [self.We, self.Wr, self.Wv, self.b, self.gamma]
+        if nf > 0 and (beta is None or not fixed_beta):
+            self.params += [self.beta]
 
-        self.descender = Adagrad(self.params)
-
+        if learning_rate == 'adagrad':
+            self.descender = Adagrad(self.params)
+            
         #self.f = T.tanh
         self.f = normalized_tanh
 
@@ -121,41 +140,66 @@ class AltlexDiscourseRNN:
         phi = sp.csc_fmatrix('phi')
 
         #X_h[-1, -1] is N x D
-        if nc > 2:
-            if nf > 0:
-                p_y_given_x = T.nnet.softmax(T.dot(X_h[-1, -1], self.gamma) + sp.structured_dot(phi, self.beta))
+        base = 0
+        if rnn:
+            base = base + T.dot(X_h[-1, -1], self.gamma)
+        if nf > 0:
+            if nc > 2:
+                base = base + sp.structured_dot(phi, self.beta)
             else:
-                p_y_given_x = T.nnet.softmax(T.dot(X_h[-1, -1], self.gamma))
+                base = base + sp.structured_dot(phi, self.beta.dimshuffle(0, 'x')).flatten()
+
+        if nc > 2:
+            p_y_given_x = T.nnet.softmax(base)
             y_pred = T.argmax(p_y_given_x, axis=1)
             costs = -T.log(p_y_given_x)[T.arange(y.shape[0]), y]
         else:
-            if nf > 0:
-                p_y_given_x = T.nnet.sigmoid(T.dot(X_h[-1, -1], self.gamma) + sp.structured_dot(phi, self.beta.dimshuffle(0, 'x')).flatten())
-            else:
-                p_y_given_x = T.nnet.sigmoid(T.dot(X_h[-1, -1], self.gamma))
+            p_y_given_x = T.nnet.sigmoid(base)
             y_pred = p_y_given_x > 0.5
             costs = -y * T.log(p_y_given_x) - (1-y) * T.log(1-p_y_given_x)
 
-        if pairwise_constraint:
-            cost = costs.mean() + lambda_w * (self.We ** 2).sum() + lambda_w * (self.Wr ** 2).sum() + lambda_w * (self.Wv ** 2).sum() + lambda_w * (self.b ** 2).sum() + lambda_w * (self.gamma ** 2).sum() - lambda_e * T.batched_dot(X_h[-1, -1][::2], X_h[-1, -1][1::2]).mean()
-        else:
-            cost = costs.mean() + lambda_w * (self.We ** 2).sum() + lambda_w * (self.Wr ** 2).sum() + lambda_w * (self.Wv ** 2).sum() + lambda_w * (self.b ** 2).sum() + lambda_w * (self.gamma ** 2).sum()
+        cost = costs.mean()
+        if rnn:
+            cost = cost + lambda_w * (self.We ** 2).sum() + lambda_w * (self.Wr ** 2).sum() + lambda_w * (self.Wv ** 2).sum() + lambda_w * (self.b ** 2).sum() + lambda_w * (self.gamma ** 2).sum()
+            if pairwise_constraint:
+                cost = cost - lambda_e * T.batched_dot(X_h[-1, -1][::2], X_h[-1, -1][1::2]).mean()
 
-        if nf > 0:
-            cost = cost + lambda_f*T.abs_(self.beta).sum()
+        if nf > 0 and (beta is None or not fixed_beta):
+            cost = cost + lambda_f*(l1_ratio*T.abs_(self.beta).sum() + (1-l1_ratio) * (self.beta ** 2).sum())
     
         grad = T.grad(cost, self.params)
 
-        if nf > 0:
-            self.cost_and_grad = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask,
-                                                         phi, y],
-                                                 outputs=[cost] + grad,
-                                                 allow_input_downcast=True)
+        if learning_rate == 'optimal':
+            def dloss(p, y):
+                z = p * y
+                if z > 18:
+                    return np.exp(-z) * -y
+                if z < -18:
+                    return -y
+                return -y / (np.exp(z) + 1)
+            
+            typw = np.sqrt(1.0 / np.sqrt(lambda_w))            
+            initial_eta0 = typw / max(1.0, dloss(-typw, 1.0))
+            optimal_init = 1.0 / (initial_eta0 * lambda_w)
+            print(typw, initial_eta0, optimal_init)
+            self.t = theano.shared(name='t',
+                                   value=0.).astype(theano.config.floatX)
+            eta = 1.0 / (lambda_w * (optimal_init + self.t))
+            updates = [(p, p - eta*g) for p,g in zip(self.params, grad)]
         else:
-            self.cost_and_grad = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask,
-                                                         y],
-                                                 outputs=[cost] + grad,
-                                                 allow_input_downcast=True)
+            updates = []
+
+        inputs = []
+        if rnn:
+            inputs += [x_idxs, x_parents, x_rel_idxs, x_mask]
+        if nf > 0:
+            inputs += [phi]
+        inputs += [y]
+
+        self.cost_and_grad = theano.function(inputs=inputs,
+                                             outputs=[cost] + grad,
+                                             updates=updates,
+                                             allow_input_downcast=True)
                                              
         self.sums = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask],
                                     outputs=X_s,
@@ -164,34 +208,10 @@ class AltlexDiscourseRNN:
                                       outputs=X_h,
                                      allow_input_downcast=True)
 
-        if nf > 0:
-            self.classify = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask, phi],
-                                            outputs=y_pred,
-                                            allow_input_downcast=True)
-        else:
-            self.classify = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask],
-                                            outputs=y_pred,
-                                            allow_input_downcast=True)
+        self.classify = theano.function(inputs=inputs[:-1],
+                                        outputs=y_pred,
+                                        allow_input_downcast=True)
         
-        #add fine-grained features
-        '''
-        phi = T.matrix('phi') #N x F
-        p_y_given_x = T.nnet.sigmoid(T.batched_dot(T.dot(X_h[-1, -1], A), C_h[-1, -1].T) + T.dot(phi, self.beta))
-        xent = -y * T.log(p_y_given_x) - (1-y) * T.log(1-p_y_given_x)
-        cost = xent.mean() #TODO: add regularization + 0.01 * (w ** 2).sum()
-        grad = T.grad(cost, self.params)
-        
-        self.cost_and_grad = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask,
-                                                     c_idxs, c_parents, c_rel_idxs, c_mask],
-                                             outputs=[cost] + grad)
-        self.states = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask,
-                                              c_idxs, c_parents, c_rel_idxs, c_mask],
-                                      outputs=[X_s, C_s])
-        self.classify = theano.function(inputs=[x_idxs, x_parents, x_rel_idxs, x_mask,
-                                                c_idxs, c_parents, c_rel_idxs, c_mask],
-                                                outputs=y_pred)
-
-        '''
 
     def gradient_descent(self, new_gradients):
         self.descender.gradient_descent(*new_gradients)
@@ -200,10 +220,14 @@ class AltlexDiscourseRNN:
     def train(self, batch, lambda_w=1, lambda_a=1, lambda_beta=1, lambda_e=1):
         cost_and_grad = self.cost_and_grad(*batch)                
 
-        #update gradients from cost_and_grad[1:]
-        self.gradient_descent([j/len(batch[0]) for i,j in enumerate(cost_and_grad[1:])])
+        if self.learning_rate == 'adagrad':
+            #update gradients from cost_and_grad[1:]
+            self.gradient_descent([j/len(batch[-1]) for i,j in enumerate(cost_and_grad[1:])])
+        if self.learning_rate == 'optimal':
+            print(self.t.get_value())
+            self.t.set_value(self.t.get_value() + len(batch[-1]))
 
-        return cost_and_grad[0]/len(batch[0])
+        return cost_and_grad[0]/len(batch[-1])
 
     def metrics(self, test):
         y_true = [datum[-1] for datum in test]
