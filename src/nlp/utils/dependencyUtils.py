@@ -137,3 +137,56 @@ def getAllEventsAndArguments(parse):
 
     return ret
                                                             
+def makeDependencies(words, dep):
+    #make the root of the altlex the new root
+    #for every edge on the path from the original root to the new root flip the direction
+    altlexStart = len(words[0])
+    altlexEnd = len(words[0]+words[1])
+    altlexRoot = None
+
+    #print()
+    #print(datum['altlex'], altlexStart, altlexEnd, words[altlexStart:altlexEnd])
+    #print(zip(words, deps))
+    
+    if len(words[1])==1:
+        altlexRoot = altlexStart
+    else:
+        for i in range(altlexStart, altlexEnd):
+            rel,gov = deps[i]
+            #if the gov is the parent of the altlex root or there is none
+            if gov in range(altlexStart, altlexEnd) and (altlexRoot is None or i == altlexRoot):
+                altlexRoot = gov
+
+    if altlexRoot is None:
+        
+        for i in range(altlexStart, altlexEnd):
+            if deps[i][0] != 'det':
+                altlexRoot = i
+                break
+        
+    assert(altlexRoot is not None)
+
+        
+    parent = -1
+    rel = 'root'
+    child = altlexRoot
+    while child != -1:
+        dep, gov = deps[child]
+        deps[child][0] = rel
+        deps[child][1] = parent
+
+        parent = child
+        child = gov
+        rel = dep + '_rev'
+
+    #print(zip(words, deps))
+
+    final_words = words[0] + words[1] + words[2]
+    d = [('ROOT', None, None)]
+    for i,j in enumerate(deps):
+        if j is None:
+            d.append((None,None,None))
+        else:
+            d.append((final_words[i].lower(), j[0], j[1]+1))
+
+    return d

@@ -13,63 +13,15 @@ import numpy as np
 from gensim.models.word2vec import Word2Vec
 
 from dependencyRNN.data.dependencyData import DependencyData
+from nlp.utils import dependencyUtils
 
 def makeDependencies(datum):
     deps = datum['origDependencies']
-    words = datum['words'][0] + datum['words'][1] + datum['words'][2]
     label = datum['label'] #> 0
 
-    #make the root of the altlex the new root
-    #for every edge on the path from the original root to the new root flip the direction
-    altlexStart = len(datum['words'][0])
-    altlexEnd = len(datum['words'][0]+datum['words'][1])
-    altlexRoot = None
+    d = dependencyUtils.makeDependencies(datum['words'], deps)
 
-    #print()
-    #print(datum['altlex'], altlexStart, altlexEnd, words[altlexStart:altlexEnd])
-    #print(zip(words, deps))
-    
-    if len(datum['words'][1])==1:
-        altlexRoot = altlexStart
-    else:
-        for i in range(altlexStart, altlexEnd):
-            rel,gov = deps[i]
-            #if the gov is the parent of the altlex root or there is none
-            if gov in range(altlexStart, altlexEnd) and (altlexRoot is None or i == altlexRoot):
-                altlexRoot = gov
-
-    if altlexRoot is None:
-        
-        for i in range(altlexStart, altlexEnd):
-            if deps[i][0] != 'det':
-                altlexRoot = i
-                break
-        
-    assert(altlexRoot is not None)
-
-        
-    parent = -1
-    rel = 'root'
-    child = altlexRoot
-    while child != -1:
-        dep, gov = deps[child]
-        deps[child][0] = rel
-        deps[child][1] = parent
-
-        parent = child
-        child = gov
-        rel = dep + '_rev'
-
-    #print(zip(words, deps))
-    
-    d = [('ROOT', None, None)]
-    for i,j in enumerate(deps):
-        if j is None:
-            d.append((None,None,None))
-        else:
-            d.append((words[i].lower(), j[0], j[1]+1))
-
-    return d,label
+    return d, label
 
 modelfile = sys.argv[1]
 
