@@ -252,9 +252,20 @@ class AltlexDiscourseRNN:
             d = npzfile['embeddings'].shape[1]
             V = npzfile['embeddings'].shape[0]
             r = npzfile['dependencies'].shape[0]
-            #nf = npzfile['beta'].shape[1]
-        
-            d = cls(d, V, r) #, nf, pairwise_constraint=pairwise_constraint)        
+
+            if 'beta' in npzfile:
+                nf = npzfile['beta'].shape[1]
+            else:
+                nf = 0
+
+            if len(npzfile['gamma'].shape) > 1:
+                nc = npzfile['gamma'].shape[1]
+            else:
+                nc = 2
+                
+            #rnn = False
+                
+            d = cls(d, V, r, nf=nf, nc=nc)
         
             for param in d.params:
                 param.set_value(npzfile[param.name])
