@@ -30,14 +30,18 @@ class ParsedWikipediaReader:
                 for sentence in sentences:
                     yield sentence
 
-    def iterData(self, start=0, shuffle=False):
+    def iterSentences(self, start=0, end=2**32, shuffle=False, index=False):
         inputFiles = list(enumerate(sorted(os.listdir(self.indir))))
+
+        if index:
+            shuffle = False
+            
         if shuffle:
             np.random.shuffle(inputFiles)
             
-        for index,inputFile in inputFiles[start:]:
+        for fileIndex,inputFile in inputFiles[start:end]:
             inputFileFullPath = os.path.join(self.indir, inputFile)
-            print(index, inputFile)
+            print(fileIndex, inputFile)
             if inputFileFullPath.endswith('.json.gz'):
                 with gzip.open(inputFileFullPath) as f:
                     articles = json.load(f)
@@ -45,30 +49,37 @@ class ParsedWikipediaReader:
                 if shuffle:
                     np.random.shuffle(articles)
                     
-                for title in articles:
-                    for sentence in articles[title]:
-                        dep = sentence['dep']
-                        words = sentence['words']
+                for articleIndex,title in enumerate(articles):
+                    for sentenceIndex,sentence in enumerate(articles[title]):
+                        if index:
+                            yield (fileIndex,articleIndex,sentenceIndex),sentence
+                        else:
+                            yield sentence
+                            
+    def iterData(self, start=0, shuffle=False):
+        for sentence in self.iterSentences(start, shuffle):
+            dep = sentence['dep']
+            words = sentence['words']
 
-                        for i in range(len(dep)):
-                            if self.compounded:
-                                depTuples = dependencyUtils.tripleToList(dep[i], len(words[i]))
-                                compounds = dependencyUtils.getCompounds(depTuples)
-                                compoundsRange = {min(compounds[j] + [j]): max(compounds[j] + [j])
-                                                  for j in compounds}
-                                
-                                final_words = []
-                                j = 0
-                                while j < len(words[i]):
-                                    if j in compoundsRange:
-                                        word = '_'.join(words[i][j:compoundsRange[j]+1]).lower()
-                                        j += compoundsRange[j]+1-j
-                                    else:
-                                        word = words[i][j].lower()
-                                        j += 1
-                                        
-                                    final_words.append(word)
-                                #print(final_words)
-                                yield final_words
-                            else:
-                                yield [j.lower() for j in words[i]]
+            for i in range(len(dep)):
+                if self.compounded:
+                    depTuples = dependencyUtils.tripleToList(dep[i], len(words[i]))
+                    compounds = dependencyUtils.getCompounds(depTuples)
+                    compoundsRange = {min(compounds[j] + [j]): max(compounds[j] + [j])
+                                      for j in compounds}
+
+                    final_words = []
+                    j = 0
+                    while j < len(words[i]):
+                        if j in compoundsRange:
+                            word = '_'.join(words[i][j:compoundsRange[j]+1]).lower()
+                            j += compoundsRange[j]+1-j
+                        else:
+                            word = words[i][j].lower()
+                            j += 1
+
+                        final_words.append(word)
+                    #print(final_words)
+                    yield final_words
+                else:
+                    yield [j.lower() for j in words[i]]
