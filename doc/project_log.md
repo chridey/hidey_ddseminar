@@ -217,3 +217,15 @@ that it requires labeled data and is very slow.  This model achieves 80\% f-scor
 SVM with feature engineering.
 
 The next step is to incorporate the global context embeddings into the local context model.
+
+# 2016-04-28
+This week I ran several experiments using the local context model.
+
+To reiterate: this model is a GLM where f(x) = f(h_n \dot w_n + \beta \dot \phi) and has constraints e_n \dot e_{n+1} < K, where e_n and e_{n+1} 
+are paraphrase pairs from Simple and English Wikipedia.
+
+When predicting causal or not-causal on a labeled test set, the model obtains 81\% f-measure.  When expanding to 3 classes to predict the direction
+of the relationship (not-causal, reason, or result) the model only gets around 50\% micro-averaged f-measure.
+
+Still to do: incorporate the global context embeddings.  (Hopefully this will be done before the paper deadline).  For now this will take the form
+of a scalar feature, taking the dot product of the events across the connective, which will give an approximation to PMI.
