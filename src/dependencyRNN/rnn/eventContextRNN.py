@@ -50,7 +50,11 @@ class EventContextRNN:
                                  value=0.2 * np.random.uniform(-1.0, 1.0, (r, d, d))
                                  ).astype(theano.config.floatX)
 
-        self.params = [self.Wx, self.Wve, self.Wvc, self.Wre, self.Wrc]
+        #d long bias vector
+        #self.b = theano.shared(name='b',
+        #                       value=np.zeros(d, dtype=theano.config.floatX))
+
+        self.params = [self.Wx, self.Wve, self.Wvc, self.Wre, self.Wrc] #, self.b]
 
         x_idxs = T.ivector('x')
         c_idxs = T.ivector('c')
@@ -91,9 +95,9 @@ class EventContextRNN:
         #self.f = normalized_tanh
         self.f = T.tanh
 
-        H_x_child = self.f(T.dot(self.Wve, X_child))
-        H_c_child = self.f(T.dot(self.Wvc, C_child))
-        H_n_child = self.f(T.dot(self.Wvc, N_child))
+        H_x_child = self.f(T.dot(self.Wve, X_child) )# + self.b)
+        H_c_child = self.f(T.dot(self.Wvc, C_child) )# + self.b)
+        H_n_child = self.f(T.dot(self.Wvc, N_child) )# + self.b)
 
         H_x_sum = T.batched_dot(X_rels, H_x_child.T).reshape((x_idxs.shape[0],
                                                             x_child_idxs.shape[0] // x_idxs.shape[0],
@@ -105,9 +109,9 @@ class EventContextRNN:
                                                             n_child_idxs.shape[0] // n_idxs.shape[0],
                                                             d)).sum(axis=1)
         
-        H_x = self.f(T.dot(self.Wve, X.T) + H_x_sum.T)
-        H_c = self.f(T.dot(self.Wvc, C.T) + H_c_sum.T)
-        H_n = self.f(T.dot(self.Wvc, N.T) + H_n_sum.T)
+        H_x = self.f(T.dot(self.Wve, X.T) + H_x_sum.T )# + self.b)
+        H_c = self.f(T.dot(self.Wvc, C.T) + H_c_sum.T )# + self.b)
+        H_n = self.f(T.dot(self.Wvc, N.T) + H_n_sum.T )# + self.b)
         
         cost = -T.mean(T.log(T.nnet.sigmoid(T.batched_dot(H_x.T, H_c.T))) + \
                        T.log(T.nnet.sigmoid(-T.batched_dot(H_x.T, H_n.T))))

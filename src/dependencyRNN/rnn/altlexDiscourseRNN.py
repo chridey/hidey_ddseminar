@@ -245,7 +245,7 @@ class AltlexDiscourseRNN:
             np.savez(f, **kwds)
 
     @classmethod
-    def load(cls, filename, pairwise_constraint=False):
+    def load(cls, filename, pairwise_constraint=False, beta=None, fixed_beta=False):
         with open(filename) as f:
             npzfile = np.load(f)
 
@@ -257,15 +257,20 @@ class AltlexDiscourseRNN:
                 nf = npzfile['beta'].shape[1]
             else:
                 nf = 0
-
+                
+            if beta is not None:
+                nf = beta.shape[0]
+            print('nf = {}'.format(nf))
+            
             if len(npzfile['gamma'].shape) > 1:
                 nc = npzfile['gamma'].shape[1]
             else:
                 nc = 2
-                
+            print('nc = {}'.format(nc))
+            
             #rnn = False
                 
-            d = cls(d, V, r, nf=nf, nc=nc)
+            d = cls(d, V, r, nf=nf, nc=nc, beta=beta, fixed_beta=fixed_beta)
         
             for param in d.params:
                 param.set_value(npzfile[param.name])

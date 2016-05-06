@@ -13,7 +13,7 @@ def tripleToList(dependencies, length, multipleParents=False, ignoreOutOfBounds=
                 ret[dep] = []
             ret[dep].append((rel.lower(), gov))
         else:
-            ret[dep] = [(rel.lower(), gov)]
+            ret[dep] = [rel.lower(), gov]
     return ret
 
     #TODO: handle cases with more than one parent
@@ -111,9 +111,13 @@ def getCompounds(parse):
     for i in range(len(parse)):
         if parse[i] is None:
             continue
-        for j in parse[i]:
-            if j[0] in ('compound', 'name', 'mwe'):
-                ret[j[1]].append(i)
+        if type(parse[i][0]) in (str, unicode):
+            if parse[i][0] in ('compound', 'name', 'mwe'):
+                ret[parse[i][1]].append(i)
+        else:
+            for j in parse[i]:
+                if j[0] in ('compound', 'name', 'mwe'):
+                    ret[j[1]].append(i)
     return ret
 
 def getAllEventsAndArguments(parse):
@@ -127,17 +131,23 @@ def getAllEventsAndArguments(parse):
         if parse[i] is None:
             print('Problem with parse: {}'.format(parse))
             continue
-        for j in parse[i]:
-            if j[0] in ('nsubj', 'nsubjpass', 'dobj', 'iobj'):
-                if j[0] not in ret[j[1]]:
-                    ret[j[1]][j[0]] = []
+        if type(parse[i][0]) in (str, unicode):
+            if parse[i][0] in ('nsubj', 'nsubjpass', 'dobj', 'iobj'):
+                if parse[i][0] not in ret[parse[i][1]]:
+                    ret[parse[i][1]][parse[i][0]] = []
 
-                #TODO: rerun, just changed this
-                ret[j[1]][j[0]].append(i)
+                ret[parse[i][1]][parse[i][0]].append(i)
+        else:
+            for j in parse[i]:
+                if j[0] in ('nsubj', 'nsubjpass', 'dobj', 'iobj'):
+                    if j[0] not in ret[j[1]]:
+                        ret[j[1]][j[0]] = []
+
+                    ret[j[1]][j[0]].append(i)
 
     return ret
                                                             
-def makeDependencies(words, dep):
+def makeDependencies(words, deps):
     #make the root of the altlex the new root
     #for every edge on the path from the original root to the new root flip the direction
     altlexStart = len(words[0])

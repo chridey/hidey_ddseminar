@@ -3,7 +3,7 @@ import gzip
 import json
 import time
 
-from sklearn.metrics import precision_score,recall_score,precision_recall_fscore_support
+from sklearn.metrics import precision_score,recall_score,precision_recall_fscore_support,accuracy_score
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.externals import joblib
 
@@ -30,6 +30,9 @@ if __name__ == '__main__':
     parser.add_argument('--train_features')
     parser.add_argument('--test_features')
     parser.add_argument('--tune_features')        
+
+    parser.add_argument('--testwords')
+    parser.add_argument('--tunewords')        
 
     parser.add_argument('--balance',
                         type=int)
@@ -136,34 +139,38 @@ if __name__ == '__main__':
                                    pairwise_constraint=args.pairwise,
                                    features=train_features,
                                    combined=args.combined,
-                                   rnn='rnn' not in args.ablate)
+                                   rnn=args.ablate and 'rnn' not in args.ablate)
 
     if args.testfile:
         testIterator = AltlexDiscourseData(args.testfile, verbose=args.verbose,
                                            features=test_features,
                                            combined=args.combined,
-                                           rnn='rnn' not in args.ablate)
+                                           rnn=args.ablate and 'rnn' not in args.ablate)
     if args.tunefile:
         tuneIterator = AltlexDiscourseData(args.tunefile, verbose=args.verbose,
                                            balance=args.balance,
                                            features=tune_features,
                                            combined=args.combined,
-                                           rnn='rnn' not in args.ablate)
+                                           rnn=args.ablate and 'rnn' not in args.ablate)
 
-    adrnn = AltlexDiscourseRNN(args.dimension,
-                               size,
-                               len(relations),
-                               embeddings=embeddings,
-                               pairwise_constraint=args.pairwise,
-                               nc = len(set(iterator.labels)),
-                               nf = 0 if train_features is None else train_features.shape[1],
-                               lambda_w=args.alpha,
-                               lambda_e=args.alpha,
-                               lambda_f=args.alpha,
-                               rnn='rnn' not in args.ablate,
-                               l1_ratio=args.l1_ratio,
-                               beta=beta,
-                               fixed_beta=args.fixed_beta)
+    if args.load:
+        adrnn = AltlexDiscourseRNN.load(args.load, beta=beta, pairwise_constraint=args.pairwise,
+                                        fixed_beta=args.fixed_beta)
+    else:
+        adrnn = AltlexDiscourseRNN(args.dimension,
+                                   size,
+                                   len(relations),
+                                   embeddings=embeddings,
+                                   pairwise_constraint=args.pairwise,
+                                   nc = len(set(iterator.labels)),
+                                   nf = 0 if train_features is None else train_features.shape[1],
+                                   lambda_w=args.alpha,
+                                   lambda_e=args.alpha,
+                                   lambda_f=args.alpha,
+                                   rnn=args.ablate and 'rnn' not in args.ablate,
+                                   l1_ratio=args.l1_ratio,
+                                   beta=beta,
+                                   fixed_beta=args.fixed_beta)
 
     best_fscore = 0
     for i in range(args.num_epochs):
@@ -206,4 +213,43 @@ if __name__ == '__main__':
                 
         adrnn.save('{}.{}'.format(args.save, i))
 
-    
+if args.tunefile:
+    predictions = []
+    for tuneBatch in tuneIterator.iterBatches():
+        predictions += adrnn.classify(*tuneBatch[:-1]).tolist()
+    labels = tuneIterator.labels
+
+    accuracy = accuracy_score(labels, predictions)
+    precision,recall,fscore,_ = (precision_recall_fscore_support(labels, predictions))
+    print("Accuracy: {}".format(accuracy))
+    print("Precision: {}".format(precision))
+    print("Recall: {}".format(recall))
+    print("Fscore: {}".format(fscore))
+
+    if args.tunewords:
+        #do error analysis
+        with open(args.tunewords) as f:
+            words = json.load(f)
+        with open(args.tunewords + '.errors', 'w') as f:
+            json.dump(zip(words, labels, predictions), f)
+
+if args.testfile:
+    predictions = []
+    for testBatch in testIterator.iterBatches(verbose=False):
+        predictions += adrnn.classify(*testBatch[:-1]).tolist()
+    labels = testIterator.labels
+
+    print(len(labels), len(predictions))
+    accuracy = accuracy_score(labels, predictions)
+    precision,recall,fscore,_ = (precision_recall_fscore_support(labels, predictions))
+    print("Accuracy: {}".format(accuracy))
+    print("Precision: {}".format(precision))
+    print("Recall: {}".format(recall))
+    print("Fscore: {}".format(fscore))
+
+    if args.testwords:
+        #do error analysis
+        with open(args.testwords) as f:
+            words = json.load(f)
+        with open(args.testwords + '.errors', 'w') as f:
+            json.dump(zip(words, labels, predictions), f)

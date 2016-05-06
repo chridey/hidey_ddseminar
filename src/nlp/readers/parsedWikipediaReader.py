@@ -44,8 +44,12 @@ class ParsedWikipediaReader:
             print(fileIndex, inputFile)
             if inputFileFullPath.endswith('.json.gz'):
                 with gzip.open(inputFileFullPath) as f:
-                    articles = json.load(f)
-
+                    try:
+                        articles = json.load(f)
+                    except IOError as e:
+                        print(e)
+                        continue
+                    
                 if shuffle:
                     np.random.shuffle(articles)
                     

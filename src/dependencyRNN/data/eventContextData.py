@@ -178,6 +178,11 @@ class EventContextData:
         ec.setArgumentCounts(*argumentCounts)
 
         return ec
+
+    def iterEvents(self, shuffle=False, verbose=False):
+        for article in self.iterArticles(shuffle=shuffle, verbose=verbose):
+            for e in article:
+                yield e
         
     def iterEventBatches(self, shuffle=False, verbose=False):
         for article in self.iterArticles(shuffle=shuffle, verbose=verbose):

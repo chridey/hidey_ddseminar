@@ -1,15 +1,21 @@
 from nlp.utils import dependencyUtils
 
 #extract all events from a dependency parse
-def extractEvents(dependencies, words, duplicate=False):
-    depTuples = dependencyUtils.tripleToList(dependencies, len(words), duplicate)
-
+def extractEvents(dependencies, words, duplicate=False, start=0, end=float('inf'), triples=True):
+    if triples:
+        depTuples = dependencyUtils.tripleToList(dependencies, len(words), duplicate)
+    else:
+        depTuples = dependencies
+        
     compounds = dependencyUtils.getCompounds(depTuples)
     
     es = dependencyUtils.getAllEventsAndArguments(depTuples)
 
     events = []
-    for e in es:
+    for e in sorted(es):
+        if e < start or e >= end:
+            continue
+        
         if 'nsubjpass' in es[e]:
             predicate = words[e].lower() + '_(passive)'
             key = 'nsubjpass'
@@ -29,6 +35,31 @@ def extractEvents(dependencies, words, duplicate=False):
         events.append([predicate] + arguments)
 
     return events
+
+def getEventIndices(event, vocab, add=False):
+    predicate = event[0]
+    arguments = event[1:]
+    
+    if predicate not in vocab:
+        if add:
+            vocab[predicate] = len(vocab)
+        else:
+            return None
+        
+    predicateIndex = vocab[predicate]
+                        
+    argument_indices = [[], [], []]
+    for index, argType in enumerate(arguments):
+        for arg in sorted(argType):
+            if arg not in vocab:
+                if add:
+                    vocab[arg] = len(vocab)
+                else:
+                    return None
+                
+            argument_indices[index].append(vocab[arg])
+
+    return predicateIndex, tuple(argument_indices[0]), tuple(argument_indices[1]), tuple(argument_indices[2])
 
 #make interaction features
 #combine everything that matches pattern a with pattern b
